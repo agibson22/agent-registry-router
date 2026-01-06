@@ -1,0 +1,31 @@
+[project]
+name = "agent-registry-router"
+version = "0.1.0"
+description = "Registry-driven LLM routing: build classifier prompts from agent descriptions, validate decisions, and dispatch."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "Apache-2.0" }
+authors = [{ name = "ag", email = "agibson22@gmail.com"}]
+
+dependencies = [
+  "pydantic>=2.0.0",
+]
+
+[project.optional-dependencies]
+pydanticai = [
+  "pydantic-ai",
+]
+dev = [
+  "pytest>=8.0.0",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/agent_registry_router"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+
