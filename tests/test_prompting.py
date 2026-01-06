@@ -34,3 +34,14 @@ def test_build_classifier_system_prompt_uses_custom_preamble() -> None:
     assert "**general**: General help." in prompt
 
 
+def test_build_classifier_system_prompt_appends_extra_instructions() -> None:
+    registry = AgentRegistry()
+    registry.register(AgentRegistration(name="general", description="General help."))
+
+    preamble = "You are a query classifier."
+    extra = "Important: The UI uses @mentions."
+    prompt = build_classifier_system_prompt(registry, preamble=preamble, extra_instructions=extra)
+
+    assert prompt.startswith(preamble + " " + extra)
+
+

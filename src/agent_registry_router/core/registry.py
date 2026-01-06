@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Mapping, Optional
 
 from pydantic import BaseModel, Field
 
@@ -38,6 +38,14 @@ class AgentRegistry:
 
     def __init__(self) -> None:
         self._agents: Dict[str, AgentRegistration] = {}
+
+    @classmethod
+    def from_descriptions(cls, descriptions: Mapping[str, str], *, routable: bool = True) -> "AgentRegistry":
+        """Convenience constructor for building a registry from name->description mappings."""
+        registry = cls()
+        for name, description in descriptions.items():
+            registry.register(AgentRegistration(name=name, description=description, routable=routable))
+        return registry
 
     def register(self, registration: AgentRegistration) -> None:
         """Register (or overwrite) an agent registration."""

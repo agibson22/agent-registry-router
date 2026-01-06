@@ -10,19 +10,24 @@ def build_classifier_system_prompt(
     *,
     default_agent: str = "general",
     preamble: Optional[str] = None,
+    extra_instructions: Optional[str] = None,
 ) -> str:
     """Build a classifier system prompt dynamically from registry agent descriptions."""
     descriptions = registry.routable_descriptions()
     agent_sections = [f"**{name}**: {desc}" for name, desc in descriptions.items()]
 
     prompt_parts: list[str] = []
-    if preamble:
-        prompt_parts.append(preamble.strip())
-    else:
-        prompt_parts.append(
+    base = (
+        preamble.strip()
+        if preamble
+        else (
             "You are a query classifier that routes user messages to the appropriate agent. "
             "Analyze the user's intent and route to the best agent."
         )
+    )
+    if extra_instructions and extra_instructions.strip():
+        base = base + " " + extra_instructions.strip()
+    prompt_parts.append(base)
 
     if agent_sections:
         prompt_parts.append("\n\n".join(agent_sections))
