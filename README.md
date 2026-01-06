@@ -2,7 +2,13 @@
 Registry-driven LLM routing: build classifier prompts from agent descriptions, validate decisions, and dispatch to other agents.
 
 ## Install (uv)
-From a checkout of this repo:
+From PyPI:
+
+```bash
+uv pip install agent-registry-router
+```
+
+From a checkout of this repo (dev/editable):
 
 ```bash
 uv venv
