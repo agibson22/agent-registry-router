@@ -24,11 +24,10 @@ jobs:
       - name: Set up uv
         uses: astral-sh/setup-uv@v3
         with:
-          enable-cache: true
-          cache-dependency-glob: "pyproject.toml"
+          enable-cache: false
 
       - name: Install
-        run: uv pip install -e ".[dev]"
+        run: uv pip install --system -e ".[dev]"
 
       - name: Test
         run: pytest
