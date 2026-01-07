@@ -20,6 +20,20 @@ Use it when you need:
 - Lightweight integration with frameworks like PydanticAI
 - Extensibility: plug your own classifier/agents, add hooks for monitoring, and keep routing logic decoupled from business logic
 
+## Features
+- Registry-driven classifier prompts (deterministic order, routable-only, size-aware)
+- Fail-fast validation with typed errors (no silent fallbacks)
+- PydanticAI dispatcher with pinned bypass and observability hooks (`on_event`)
+- Typed package (`py.typed`) and CI gates (ruff/black/mypy/pytest-cov)
+- FastAPI demo with pinned bypass: `examples/fastapi_pinned_bypass/README.md`
+
+## Scope
+- Routing, validation, observability; bring your own LLM clients/agents.
+- Adapters are opt-in; core stays lightweight.
+
+## Status
+- v0.2.0 — fail-fast by default; API surface stable; adapters namespaced.
+
 ## Install (uv)
 From PyPI:
 
