@@ -4,7 +4,14 @@ from dataclasses import dataclass
 from typing import Any, Dict, Optional
 
 from agent_registry_router.adapters.pydantic_ai import PydanticAIDispatcher
-from agent_registry_router.core import AgentRegistration, AgentRegistry, RouteDecision
+import pytest
+
+from agent_registry_router.core import (
+    AgentRegistration,
+    AgentRegistry,
+    InvalidRouteDecision,
+    RouteDecision,
+)
 
 
 @dataclass
@@ -88,11 +95,8 @@ def test_dispatcher_falls_back_when_classifier_selects_unknown_agent() -> None:
         default_agent="general",
     )
 
-    result = _run(dispatcher)
-    assert result.agent_name == "general"
-    assert result.validated_decision is not None
-    assert result.validated_decision.did_fallback is True
-    assert result.validated_decision.confidence == 0.5
+    with pytest.raises(InvalidRouteDecision):
+        _run(dispatcher)
 
 
 def _run(dispatcher: PydanticAIDispatcher, pinned_agent: Optional[str] = None):

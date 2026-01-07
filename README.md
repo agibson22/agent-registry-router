@@ -41,6 +41,16 @@ decision = RouteDecision(agent="special", confidence=0.9, reasoning="Clear match
 validated = validate_route_decision(decision, registry=registry, default_agent="general")
 ```
 
+## Behavior & errors
+
+- Default agent must be routable; unknown agents or empty registries raise.
+- Classifier selecting a non-routable agent raises `InvalidRouteDecision`.
+- Missing default or no routable agents raises `InvalidFallback`.
+- Dispatcher raises `AgentNotFound` if the chosen agent cannot be resolved.
+- Registry validation uses `RegistryError`; routing errors derive from `RoutingError`.
+- Confidence adjustment on invalid routes is unchanged; pinned invalid falls back to the classifier.
+- Prompt listing preserves registration order; only routable agents are included.
+
 ## Adapters
 
 - **PydanticAI dispatcher**: `src/agent_registry_router/adapters/pydantic_ai/README.md`

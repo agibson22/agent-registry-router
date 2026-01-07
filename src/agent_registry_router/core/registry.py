@@ -4,10 +4,12 @@ from typing import Any, Dict, List, Mapping, Optional
 
 from pydantic import BaseModel, Field
 
+from agent_registry_router.core.exceptions import RegistryError
+
 
 def _normalize_agent_name(name: str) -> str:
     if not name or not name.strip():
-        raise ValueError("Agent name cannot be empty")
+        raise RegistryError("Agent name cannot be empty")
     return name.strip().lower()
 
 

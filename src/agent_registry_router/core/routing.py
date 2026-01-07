@@ -4,6 +4,7 @@ from typing import Optional
 
 from pydantic import BaseModel, Field
 
+from agent_registry_router.core.exceptions import InvalidFallback, InvalidRouteDecision
 from agent_registry_router.core.registry import AgentRegistry, _normalize_agent_name
 
 
@@ -41,20 +42,19 @@ def validate_route_decision(
     registry: AgentRegistry,
     default_agent: str = "general",
 ) -> ValidatedRouteDecision:
-    """Validate the route decision against routable agents, falling back if invalid."""
+    """Validate the route decision against routable agents; fail-fast on invalid cases."""
     routable = set(registry.routable_names())
     normalized_default = _normalize_agent_name(default_agent)
 
-    if decision.agent in routable:
-        return ValidatedRouteDecision(**decision.model_dump(), did_fallback=False)
+    if not routable:
+        raise InvalidFallback("No routable agents registered.")
 
-    fallback_agent = normalized_default if normalized_default in routable else (next(iter(routable)) if routable else normalized_default)
-    return ValidatedRouteDecision(
-        agent=fallback_agent,
-        confidence=max(0.0, min(1.0, decision.confidence - 0.3)),
-        reasoning=decision.reasoning,
-        did_fallback=True,
-        fallback_reason=f"Agent '{decision.agent}' is not a routable registered agent.",
-    )
+    if normalized_default not in routable:
+        raise InvalidFallback(f"Default agent '{default_agent}' is not a routable registered agent.")
+
+    if decision.agent not in routable:
+        raise InvalidRouteDecision(f"Agent '{decision.agent}' is not a routable registered agent.")
+
+    return ValidatedRouteDecision(**decision.model_dump(), did_fallback=False)
 
 

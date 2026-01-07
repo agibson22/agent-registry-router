@@ -6,7 +6,9 @@ from typing import Any, Callable, Optional, Protocol
 from pydantic import BaseModel
 
 from agent_registry_router.core import (
+    AgentNotFound,
     AgentRegistry,
+    InvalidRouteDecision,
     RouteDecision,
     ValidatedRouteDecision,
     validate_route_decision,
@@ -51,7 +53,7 @@ def _coerce_route_decision(obj: Any) -> RouteDecision:
     confidence = getattr(obj, "confidence", None)
     reasoning = getattr(obj, "reasoning", None)
     if agent is None or confidence is None:
-        raise TypeError("Classifier output must provide at least 'agent' and 'confidence'.")
+        raise InvalidRouteDecision("Classifier output must provide at least 'agent' and 'confidence'.")
     return RouteDecision(agent=agent, confidence=confidence, reasoning=reasoning)
 
 
@@ -122,7 +124,7 @@ class PydanticAIDispatcher:
 
         agent = self._get_agent(validated.agent)
         if agent is None:
-            raise LookupError(f"Agent '{validated.agent}' not found (after validation).")
+            raise AgentNotFound(f"Agent '{validated.agent}' not found (after validation).")
 
         deps = deps_for_agent(validated.agent)
         agent_run = await agent.run(message, deps=deps)
