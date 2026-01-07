@@ -1,4 +1,8 @@
 # agent-registry-router
+[![CI](https://img.shields.io/github/actions/workflow/status/agibson22/agent-registry-router/ci.yml?branch=main)](https://github.com/agibson22/agent-registry-router/actions/workflows/ci.yml)
+[![PyPI](https://img.shields.io/pypi/v/agent-registry-router)](https://pypi.org/project/agent-registry-router/)
+[![Python](https://img.shields.io/pypi/pyversions/agent-registry-router)](https://pypi.org/project/agent-registry-router/)
+[![License](https://img.shields.io/badge/license-Apache--2.0-blue)](LICENSE)
 Registry-driven LLM routing: build classifier prompts from agent descriptions, validate decisions, and dispatch to other agents.
 
 ## Install (uv)
