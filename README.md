@@ -53,6 +53,14 @@ validated = validate_route_decision(decision, registry=registry, default_agent="
 - Agent descriptions are capped at 512 characters; prompts cannot be built without routable agents. Optional `max_prompt_chars` can bound the generated prompt.
 - Observability: `PydanticAIDispatcher` accepts `on_event` callback (receives `RoutingEvent`) and optional logger; emits events for classifier run, validation, pinned bypass, agent resolution, and agent run.
 
+## API contracts
+
+- Public imports (`agent_registry_router.core`): `AgentRegistry`, `AgentRegistration`, `RouteDecision`, `ValidatedRouteDecision`, `validate_route_decision`, `build_classifier_system_prompt`, exceptions (`AgentRegistryRouterError`, `RegistryError`, `RoutingError`, `InvalidRouteDecision`, `InvalidFallback`, `AgentNotFound`), and `RoutingEvent`.
+- Adapter: `agent_registry_router.adapters.pydantic_ai` exposes `PydanticAIDispatcher`, `DispatchResult`. Adapters stay namespaced (not re-exported at package root).
+- Routing invariants: default agent must be routable; empty registry errors; non-routable selections error; pinned invalid falls back to classifier; classifier output must include `agent` and `confidence` or `InvalidRouteDecision` is raised.
+- Prompt determinism: preserves registration order; only routable agents; optional `max_prompt_chars`; description cap 512 chars.
+- Hooks: `on_event` receives `RoutingEvent(kind, payload, error)`; hook failures are swallowed; logger is optional.
+
 ## Adapters
 
 - **PydanticAI dispatcher**: `src/agent_registry_router/adapters/pydantic_ai/README.md`
