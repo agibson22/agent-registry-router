@@ -6,6 +6,10 @@ All notable changes to this repository will be documented in this file.
 
 - TBD
 
+## v0.2.4
+
+- Add response/model-response streaming to the PydanticAI adapter via `PydanticAIDispatcher.route_and_stream_responses(...)` (exposes a `ResponseStreamSession` with access to the underlying streamed run handle).
+
 ## v0.2.3
 
 - Add streaming dispatch support to the PydanticAI adapter: `PydanticAIDispatcher.route_and_stream(...)`.

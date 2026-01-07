@@ -23,7 +23,7 @@ Use it when you need:
 ## Features
 - Registry-driven classifier prompts (deterministic order, routable-only, size-aware)
 - Fail-fast validation with typed errors (no silent fallbacks)
-- PydanticAI dispatcher with pinned bypass and observability hooks (`on_event`)
+- PydanticAI dispatcher with pinned bypass and observability hooks (`on_event`); supports text streaming (`stream_text`) and response streaming (`stream_responses`)
 - Typed package (`py.typed`) and CI gates (ruff/black/mypy/pytest-cov)
 - FastAPI demo with pinned bypass: `examples/fastapi_pinned_bypass/README.md`
 
@@ -89,7 +89,7 @@ validated = validate_route_decision(decision, registry=registry, default_agent="
 ## API contracts
 
 - Public imports (`agent_registry_router.core`): `AgentRegistry`, `AgentRegistration`, `RouteDecision`, `ValidatedRouteDecision`, `validate_route_decision`, `build_classifier_system_prompt`, exceptions (`AgentRegistryRouterError`, `RegistryError`, `RoutingError`, `InvalidRouteDecision`, `InvalidFallback`, `AgentNotFound`), and `RoutingEvent`.
-- Adapter: `agent_registry_router.adapters.pydantic_ai` exposes `PydanticAIDispatcher`, `DispatchResult`, `AgentStreamChunk`. Adapters stay namespaced (not re-exported at package root).
+- Adapter: `agent_registry_router.adapters.pydantic_ai` exposes `PydanticAIDispatcher`, `DispatchResult`, `AgentStreamChunk`, `AgentResponseStreamItem`, `ResponseStreamSession`. Adapters stay namespaced (not re-exported at package root).
 - Routing invariants: default agent must be routable; empty registry errors; non-routable selections error; pinned invalid falls back to classifier; classifier output must include `agent` and `confidence` or `InvalidRouteDecision` is raised.
 - Prompt determinism: preserves registration order; only routable agents; optional `max_prompt_chars`; description cap 512 chars.
 - Hooks: `on_event` receives `RoutingEvent(kind, payload, error)`; hook failures are swallowed; logger is optional.

@@ -1,6 +1,6 @@
 [project]
 name = "agent-registry-router"
-version = "0.2.3"
+version = "0.2.4"
 description = "Registry-driven LLM routing: build classifier prompts from agent descriptions, validate decisions, and dispatch."
 readme = "README.md"
 requires-python = ">=3.10"
@@ -47,4 +47,7 @@ include = ["src/agent_registry_router/py.typed"]
 
 [tool.pytest.ini_options]
 pythonpath = ["src"]
+filterwarnings = [
+  "ignore:.*asyncio_default_fixture_loop_scope.*:pytest.PytestDeprecationWarning",
+]
 

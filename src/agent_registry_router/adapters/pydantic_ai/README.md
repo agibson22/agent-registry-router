@@ -35,9 +35,22 @@ uv pip install "agent-registry-router[pydanticai]"
   - `deps_for_agent(agent_name: str) -> Any`: factory for the selected agent deps
   - `pinned_agent: str | None`: if set and resolvable, bypasses classifier (even if not routable)
 
-- `dispatcher.route_and_stream(...) -> AsyncIterator[AgentStreamChunk]`
-  - Streams only the **selected agent** (classifier output is never yielded).
-  - `stream_classifier: bool = False`: if enabled, consumes a streaming classifier internally to completion, then streams only the chosen agent.
+## Streaming modes
+
+This adapter supports two PydanticAI-native streaming modes for the **selected agent**:
+
+- **Text streaming**: `dispatcher.route_and_stream(...) -> AsyncIterator[AgentStreamChunk]`
+  - Streams text chunks via the agent stream result’s `stream_text(...)`.
+  - Classifier output is never yielded; only the selected agent is streamed.
+
+- **Response streaming**: `dispatcher.route_and_stream_responses(...) -> ResponseStreamSession`
+  - Returns an async context manager that exposes the underlying streamed run handle (`session.streamed_run`).
+  - Streams `(model_response, is_last)` items via `session.iter_responses()`.
+  - This is ideal if you want to do framework-native progressive validation (e.g. `validate_response_output(..., allow_partial=...)`) and/or extract usage/tool messages from the run handle.
+
+Both support:
+- `pinned_agent: str | None`: if set and resolvable, bypasses the classifier (even if not routable)
+- `stream_classifier: bool = False`: if enabled, consumes a streaming classifier internally to completion (classifier streaming is never yielded)
 
 Returns `DispatchResult`:
 
@@ -84,6 +97,29 @@ async for chunk in dispatcher.route_and_stream(
     deps_for_agent=lambda agent_name: deps_for_agent(agent_name),
 ):
     print(chunk.agent_name, chunk.chunk)
+```
+
+## Response streaming example (PydanticAI model responses)
+
+```python
+from agent_registry_router.adapters.pydantic_ai import PydanticAIDispatcher
+
+async with dispatcher.route_and_stream_responses(
+    "hello",
+    classifier_deps=classifier_deps,
+    deps_for_agent=lambda agent_name: deps_for_agent(agent_name),
+) as session:
+    async for item in session.iter_responses():
+        model_response = item.model_response
+        is_last = item.is_last
+
+        # If your framework exposes progressive validation, do it here.
+        # Example (PydanticAI-style API):
+        # partial = await session.streamed_run.validate_response_output(
+        #     model_response,
+        #     allow_partial=not is_last,
+        # )
+        print(session.agent_name, is_last, model_response)
 ```
 
 

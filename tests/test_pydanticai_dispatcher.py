@@ -8,6 +8,7 @@ import pytest
 from pydantic import BaseModel
 
 from agent_registry_router.adapters.pydantic_ai import (
+    AgentResponseStreamItem,
     AgentStreamChunk,
     DispatchResult,
     PydanticAIDispatcher,
@@ -50,11 +51,22 @@ class FakeStreamedRunResult:
             yield chunk
 
 
+class FakeResponseStreamedRunResult:
+    def __init__(self, responses: list[tuple[Any, bool]]):
+        self._responses = responses
+
+    async def stream_responses(
+        self, *, debounce_by: float | None = None
+    ) -> AsyncIterator[tuple[Any, bool]]:  # noqa: ARG002
+        for item in self._responses:
+            yield item
+
+
 class FakeRunStreamContextManager:
-    def __init__(self, streamed: FakeStreamedRunResult):
+    def __init__(self, streamed: Any):
         self._streamed = streamed
 
-    async def __aenter__(self) -> FakeStreamedRunResult:
+    async def __aenter__(self) -> Any:
         return self._streamed
 
     async def __aexit__(self, exc_type: Any, exc: Any, tb: Any) -> None:  # noqa: ANN401
@@ -72,6 +84,30 @@ class FakeStreamingAgent:
     ) -> FakeRunStreamContextManager:  # noqa: ARG002
         self.called = True
         self.last_deps = deps
+        return FakeRunStreamContextManager(self._streamed)
+
+
+class FakeResponseStreamingAgent:
+    def __init__(self, responses: list[tuple[Any, bool]]):
+        self._streamed = FakeResponseStreamedRunResult(responses)
+        self.called = False
+        self.last_deps: Any | None = None
+
+    def run_stream(
+        self, message: str, *, deps: Any
+    ) -> FakeRunStreamContextManager:  # noqa: ARG002
+        self.called = True
+        self.last_deps = deps
+        return FakeRunStreamContextManager(self._streamed)
+
+
+class FakeStreamingAgentMissingStreamResponses:
+    def __init__(self) -> None:
+        self._streamed = FakeStreamedRunResult(["x"])
+
+    def run_stream(
+        self, message: str, *, deps: Any
+    ) -> FakeRunStreamContextManager:  # noqa: ARG002
         return FakeRunStreamContextManager(self._streamed)
 
 
@@ -1140,6 +1176,218 @@ def test_dispatcher_route_and_stream_streaming_classifier_run_stream_no_output_r
             raise AssertionError("should not yield if classifier produced no output")
 
     with pytest.raises(InvalidRouteDecision, match="produced no output"):
+        asyncio.run(go())
+
+
+def test_stream_responses_happy_path_exposes_streamed_run() -> None:
+    registry = AgentRegistry()
+    registry.register(AgentRegistration(name="general", description="General help."))
+    registry.register(AgentRegistration(name="special", description="Special help."))
+
+    classifier = FakeAgent(
+        RouteDecision(agent="special", confidence=0.8, reasoning="Ok")
+    )
+    special = FakeResponseStreamingAgent(
+        [({"partial": 1}, False), ({"final": True}, True)]
+    )
+    agents: dict[str, Any] = {"special": special}
+    events: list[RoutingEvent] = []
+
+    dispatcher = PydanticAIDispatcher(
+        registry=registry,
+        classifier_agent=classifier,
+        get_agent=lambda name: agents.get(name),
+        default_agent="general",
+        on_event=lambda e: events.append(e),
+    )
+
+    import asyncio
+
+    async def go() -> list[AgentResponseStreamItem]:
+        out: list[AgentResponseStreamItem] = []
+        async with dispatcher.route_and_stream_responses(
+            "hello",
+            classifier_deps={"k": "v"},
+            deps_for_agent=lambda _name: {"deps": True},
+        ) as session:
+            assert session.agent_name == "special"
+            assert session.streamed_run is not None
+            async for item in session.iter_responses():
+                out.append(item)
+        return out
+
+    items = asyncio.run(go())
+    assert [i.model_response for i in items] == [{"partial": 1}, {"final": True}]
+    assert [i.is_last for i in items] == [False, True]
+    assert items[0].validated_decision is not None
+    assert items[0].classifier_decision is not None
+    assert items[1].validated_decision is None
+    assert items[1].classifier_decision is None
+    assert items[0].was_pinned is False
+
+    kinds = [e.kind for e in events]
+    assert "classifier_run_start" in kinds
+    assert "classifier_run_success" in kinds
+    assert "decision_validated" in kinds
+    assert "agent_resolve_success" in kinds
+    assert kinds.count("agent_stream_response") == 2
+    assert "agent_stream_end" in kinds
+    assert "agent_run_success" in kinds
+
+
+def test_dispatcher_route_and_stream_responses_pinned_bypasses_classifier() -> None:
+    registry = AgentRegistry()
+    registry.register(AgentRegistration(name="general", description="General help."))
+    registry.register(AgentRegistration(name="special", description="Special help."))
+
+    classifier = FakeAgent(
+        RouteDecision(agent="general", confidence=0.1, reasoning="Should not be called")
+    )
+    special = FakeResponseStreamingAgent([("x", True)])
+    agents: dict[str, Any] = {"special": special}
+    events: list[RoutingEvent] = []
+
+    dispatcher = PydanticAIDispatcher(
+        registry=registry,
+        classifier_agent=classifier,
+        get_agent=lambda name: agents.get(name),
+        default_agent="general",
+        on_event=lambda e: events.append(e),
+    )
+
+    import asyncio
+
+    async def go() -> list[AgentResponseStreamItem]:
+        out: list[AgentResponseStreamItem] = []
+        async with dispatcher.route_and_stream_responses(
+            "hello",
+            classifier_deps={"k": "v"},
+            deps_for_agent=lambda _name: {"deps": True},
+            pinned_agent="special",
+        ) as session:
+            async for item in session.iter_responses():
+                out.append(item)
+        return out
+
+    items = asyncio.run(go())
+    assert classifier.called is False
+    assert [i.model_response for i in items] == ["x"]
+    assert items[0].was_pinned is True
+    assert items[0].validated_decision is None
+    assert items[0].classifier_decision is None
+
+    kinds = [e.kind for e in events]
+    assert "pinned_bypass" in kinds
+    assert "classifier_run_start" not in kinds
+
+
+def test_dispatcher_route_and_stream_responses_pinned_invalid_emits_then_routes() -> (
+    None
+):
+    registry = AgentRegistry()
+    registry.register(AgentRegistration(name="general", description="General help."))
+    registry.register(AgentRegistration(name="special", description="Special help."))
+
+    classifier = FakeAgent(
+        RouteDecision(agent="special", confidence=0.9, reasoning="Ok")
+    )
+    agents: dict[str, Any] = {"special": FakeResponseStreamingAgent([("x", True)])}
+    events: list[RoutingEvent] = []
+
+    dispatcher = PydanticAIDispatcher(
+        registry=registry,
+        classifier_agent=classifier,
+        get_agent=lambda name: agents.get(name),
+        default_agent="general",
+        on_event=lambda e: events.append(e),
+    )
+
+    import asyncio
+
+    async def go() -> list[AgentResponseStreamItem]:
+        out: list[AgentResponseStreamItem] = []
+        async with dispatcher.route_and_stream_responses(
+            "hello",
+            classifier_deps={"k": "v"},
+            deps_for_agent=lambda _name: {"deps": True},
+            pinned_agent="not-real",
+        ) as session:
+            async for item in session.iter_responses():
+                out.append(item)
+        return out
+
+    items = asyncio.run(go())
+    assert [i.model_response for i in items] == ["x"]
+
+    kinds = [e.kind for e in events]
+    assert "pinned_invalid" in kinds
+    assert "classifier_run_success" in kinds
+
+
+def test_stream_responses_raises_when_missing_stream_responses() -> None:
+    registry = AgentRegistry()
+    registry.register(AgentRegistration(name="general", description="General help."))
+    registry.register(AgentRegistration(name="special", description="Special help."))
+
+    classifier = FakeAgent(
+        RouteDecision(agent="special", confidence=0.9, reasoning="Ok")
+    )
+    agents: dict[str, Any] = {"special": FakeStreamingAgentMissingStreamResponses()}
+
+    dispatcher = PydanticAIDispatcher(
+        registry=registry,
+        classifier_agent=classifier,
+        get_agent=lambda name: agents.get(name),
+        default_agent="general",
+    )
+
+    import asyncio
+
+    async def go() -> None:
+        async with dispatcher.route_and_stream_responses(
+            "hello",
+            classifier_deps={"k": "v"},
+            deps_for_agent=lambda _name: {"deps": True},
+        ) as session:
+            async for _item in session.iter_responses():
+                raise AssertionError(
+                    "should not yield when stream_responses isn't supported"
+                )
+
+    with pytest.raises(TypeError, match="missing stream_responses"):
+        asyncio.run(go())
+
+
+def test_dispatcher_route_and_stream_responses_raises_when_agent_not_streamable() -> (
+    None
+):
+    registry = AgentRegistry()
+    registry.register(AgentRegistration(name="general", description="General help."))
+    registry.register(AgentRegistration(name="special", description="Special help."))
+
+    classifier = FakeAgent(
+        RouteDecision(agent="special", confidence=0.9, reasoning="Ok")
+    )
+    agents: dict[str, Any] = {"special": FakeAgent({"answer": "no stream"})}
+
+    dispatcher = PydanticAIDispatcher(
+        registry=registry,
+        classifier_agent=classifier,
+        get_agent=lambda name: agents.get(name),
+        default_agent="general",
+    )
+
+    import asyncio
+
+    async def go() -> None:
+        async with dispatcher.route_and_stream_responses(
+            "hello",
+            classifier_deps={"k": "v"},
+            deps_for_agent=lambda _name: {"deps": True},
+        ):
+            raise AssertionError("should not enter when agent isn't streamable")
+
+    with pytest.raises(TypeError, match="missing run_stream"):
         asyncio.run(go())
 
 
