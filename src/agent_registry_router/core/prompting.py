@@ -12,6 +12,7 @@ def build_classifier_system_prompt(
     default_agent: str = "general",
     preamble: Optional[str] = None,
     extra_instructions: Optional[str] = None,
+    max_prompt_chars: Optional[int] = None,
 ) -> str:
     """Build a classifier system prompt dynamically from registry agent descriptions."""
     descriptions = registry.routable_descriptions()
@@ -41,6 +42,11 @@ def build_classifier_system_prompt(
         f"When in doubt, route to '{default_agent}'."
     )
 
-    return "\n\n".join(prompt_parts).strip()
+    prompt = "\n\n".join(prompt_parts).strip()
+    if max_prompt_chars is not None and len(prompt) > max_prompt_chars:
+        raise RegistryError(
+            f"Classifier prompt exceeds max_prompt_chars={max_prompt_chars} (got {len(prompt)})."
+        )
+    return prompt
 
 

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 from dataclasses import dataclass
 from typing import Any, Callable, Optional, Protocol
 
@@ -9,6 +10,7 @@ from agent_registry_router.core import (
     AgentNotFound,
     AgentRegistry,
     InvalidRouteDecision,
+    RoutingEvent,
     RouteDecision,
     ValidatedRouteDecision,
     validate_route_decision,
@@ -76,11 +78,28 @@ class PydanticAIDispatcher:
         classifier_agent: AgentLike,
         get_agent: Callable[[str], Optional[AgentLike]],
         default_agent: str = "general",
+        on_event: Optional[Callable[[RoutingEvent], None]] = None,
+        logger: Optional[logging.Logger] = None,
     ) -> None:
         self._registry = registry
         self._classifier_agent = classifier_agent
         self._get_agent = get_agent
         self._default_agent = _normalize_name(default_agent)
+        self._on_event = on_event
+        self._logger = logger or logging.getLogger(__name__)
+
+    def _emit(self, kind: str, payload: dict, error: Optional[BaseException] = None) -> None:
+        event = RoutingEvent(kind=kind, payload=payload, error=error)
+        if self._on_event:
+            try:
+                self._on_event(event)
+            except Exception:
+                # Observability hooks should not break routing.
+                self._logger.debug("Routing event hook failed", exc_info=True)
+        if error:
+            self._logger.debug("routing.%s error=%s payload=%s", kind, error, payload)
+        else:
+            self._logger.debug("routing.%s payload=%s", kind, payload)
 
     async def route_and_run(
         self,
@@ -101,6 +120,7 @@ class PydanticAIDispatcher:
             pinned = _normalize_name(pinned_agent)
             agent = self._get_agent(pinned)
             if agent is not None:
+                self._emit("pinned_bypass", {"agent": pinned, "message": message})
                 deps = deps_for_agent(pinned)
                 run_result = await agent.run(message, deps=deps)
                 return DispatchResult(
@@ -111,24 +131,42 @@ class PydanticAIDispatcher:
                     was_pinned=True,
                 )
             # If pinned is invalid, fall through to classifier routing.
+            self._emit("pinned_invalid", {"pinned": pinned, "message": message})
 
+        self._emit("classifier_run_start", {"message": message})
         classifier_run = await self._classifier_agent.run(message, deps=classifier_deps)
         classifier_out = _extract_output(classifier_run)
         decision = _coerce_route_decision(classifier_out)
+        self._emit(
+            "classifier_run_success",
+            {"message": message, "agent": decision.agent, "confidence": decision.confidence},
+        )
 
         validated = validate_route_decision(
             decision,
             registry=self._registry,
             default_agent=self._default_agent,
         )
+        self._emit(
+            "decision_validated",
+            {
+                "selected": validated.agent,
+                "confidence": validated.confidence,
+                "did_fallback": validated.did_fallback,
+            },
+        )
 
         agent = self._get_agent(validated.agent)
         if agent is None:
-            raise AgentNotFound(f"Agent '{validated.agent}' not found (after validation).")
+            error = AgentNotFound(f"Agent '{validated.agent}' not found (after validation).")
+            self._emit("agent_resolve_failed", {"agent": validated.agent}, error=error)
+            raise error
 
+        self._emit("agent_resolve_success", {"agent": validated.agent})
         deps = deps_for_agent(validated.agent)
         agent_run = await agent.run(message, deps=deps)
 
+        self._emit("agent_run_success", {"agent": validated.agent})
         return DispatchResult(
             agent_name=validated.agent,
             output=_extract_output(agent_run),

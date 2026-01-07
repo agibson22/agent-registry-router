@@ -75,3 +75,13 @@ def test_agent_description_length_limit() -> None:
         registry.register(AgentRegistration(name="longy", description=too_long))
 
 
+def test_build_classifier_system_prompt_respects_max_chars() -> None:
+    registry = AgentRegistry()
+    registry.register(AgentRegistration(name="general", description="hi"))
+    prompt = build_classifier_system_prompt(registry, max_prompt_chars=1000)
+    assert len(prompt) <= 1000
+
+    with pytest.raises(RegistryError):
+        build_classifier_system_prompt(registry, max_prompt_chars=10)
+
+

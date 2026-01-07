@@ -11,6 +11,7 @@ from agent_registry_router.core import (
     AgentRegistry,
     InvalidRouteDecision,
     RouteDecision,
+    RoutingEvent,
 )
 
 
@@ -112,5 +113,32 @@ def _run(dispatcher: PydanticAIDispatcher, pinned_agent: Optional[str] = None):
         )
 
     return asyncio.run(go())
+
+
+def test_dispatcher_emits_events() -> None:
+    registry = AgentRegistry()
+    registry.register(AgentRegistration(name="general", description="General help."))
+    classifier = FakeAgent(RouteDecision(agent="general", confidence=0.9, reasoning="Ok"))
+    general = FakeAgent({"answer": "from general"})
+    agents: Dict[str, FakeAgent] = {"general": general}
+
+    events: list[RoutingEvent] = []
+
+    dispatcher = PydanticAIDispatcher(
+        registry=registry,
+        classifier_agent=classifier,
+        get_agent=lambda name: agents.get(name),
+        default_agent="general",
+        on_event=lambda e: events.append(e),
+    )
+
+    _run(dispatcher)
+
+    kinds = [e.kind for e in events]
+    assert "classifier_run_start" in kinds
+    assert "classifier_run_success" in kinds
+    assert "decision_validated" in kinds
+    assert "agent_resolve_success" in kinds
+    assert "agent_run_success" in kinds
 
 
