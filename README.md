@@ -3,7 +3,22 @@
 [![PyPI](https://img.shields.io/pypi/v/agent-registry-router)](https://pypi.org/project/agent-registry-router/)
 [![Python](https://img.shields.io/pypi/pyversions/agent-registry-router)](https://pypi.org/project/agent-registry-router/)
 [![License](https://img.shields.io/badge/license-Apache--2.0-blue)](LICENSE)
+
 Registry-driven LLM routing: build classifier prompts from agent descriptions, validate decisions, and dispatch to other agents.
+
+## What is this? Why use it?
+
+`agent-registry-router` helps you route LLM traffic to the right agent by:
+- Keeping a registry of agents
+- Building classifier prompts from that registry
+- Validating classifier decisions with clear, typed errors
+- Dispatching to runtime agents with optional observability hooks (`on_event`) for logging/metrics.
+
+Use it when you need:
+- A stable contract between your classifier and execution layer
+- Deterministic, size-aware prompt construction
+- Lightweight integration with frameworks like PydanticAI
+- Extensibility: plug your own classifier/agents, add hooks for monitoring, and keep routing logic decoupled from business logic
 
 ## Install (uv)
 From PyPI:
