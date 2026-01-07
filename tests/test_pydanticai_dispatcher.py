@@ -10,6 +10,7 @@ from agent_registry_router.adapters.pydantic_ai import (
     PydanticAIDispatcher,
 )
 from agent_registry_router.core import (
+    AgentNotFound,
     AgentRegistration,
     AgentRegistry,
     InvalidRouteDecision,
@@ -123,7 +124,9 @@ def test_dispatcher_agent_resolve_failure_emits_and_raises() -> None:
     registry.register(AgentRegistration(name="general", description="General help."))
     registry.register(AgentRegistration(name="special", description="Special help."))
 
-    classifier = FakeAgent(RouteDecision(agent="special", confidence=0.9, reasoning="Ok"))
+    classifier = FakeAgent(
+        RouteDecision(agent="special", confidence=0.9, reasoning="Ok")
+    )
     agents: dict[str, FakeAgent] = {"general": FakeAgent({"answer": "from general"})}
     events: list[RoutingEvent] = []
 
@@ -135,7 +138,7 @@ def test_dispatcher_agent_resolve_failure_emits_and_raises() -> None:
         on_event=lambda e: events.append(e),
     )
 
-    with pytest.raises(Exception):
+    with pytest.raises(AgentNotFound):
         _run(dispatcher)
 
     kinds = [e.kind for e in events]
@@ -147,7 +150,9 @@ def test_dispatcher_pinned_invalid_emits_then_routes() -> None:
     registry.register(AgentRegistration(name="general", description="General help."))
     registry.register(AgentRegistration(name="special", description="Special help."))
 
-    classifier = FakeAgent(RouteDecision(agent="special", confidence=0.9, reasoning="Ok"))
+    classifier = FakeAgent(
+        RouteDecision(agent="special", confidence=0.9, reasoning="Ok")
+    )
     agents: dict[str, FakeAgent] = {
         "special": FakeAgent({"answer": "from special"}),
         "general": FakeAgent({"answer": "from general"}),
@@ -193,7 +198,9 @@ def test_dispatcher_event_hook_failure_is_swallowed() -> None:
     registry = AgentRegistry()
     registry.register(AgentRegistration(name="general", description="General help."))
 
-    classifier = FakeAgent(RouteDecision(agent="general", confidence=0.9, reasoning="Ok"))
+    classifier = FakeAgent(
+        RouteDecision(agent="general", confidence=0.9, reasoning="Ok")
+    )
     agents: dict[str, FakeAgent] = {"general": FakeAgent({"answer": "from general"})}
 
     def bad_hook(event: RoutingEvent) -> None:

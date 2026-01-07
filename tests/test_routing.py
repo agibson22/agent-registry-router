@@ -5,6 +5,7 @@ from agent_registry_router.core import (
     AgentRegistry,
     InvalidFallback,
     InvalidRouteDecision,
+    RegistryError,
     RouteDecision,
     validate_route_decision,
 )
@@ -81,5 +82,5 @@ def test_registry_from_descriptions_and_lists() -> None:
 
 def test_registry_rejects_empty_name() -> None:
     registry = AgentRegistry()
-    with pytest.raises(Exception):
+    with pytest.raises(RegistryError):
         registry.register(AgentRegistration(name="   ", description="bad"))
