@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, Dict, Optional
+from typing import Any
 from uuid import UUID, uuid4
 
 from fastapi import FastAPI, HTTPException
@@ -39,15 +39,23 @@ class ToyClassifier:
     async def run(self, message: str, *, deps: Any) -> FakeRunResult:
         msg = (message or "").lower()
         if "special" in msg:
-            decision = RouteDecision(agent="special", confidence=0.9, reasoning="Keyword match: special.")
+            decision = RouteDecision(
+                agent="special",
+                confidence=0.9,
+                reasoning="Keyword match: special.",
+            )
         else:
-            decision = RouteDecision(agent="general", confidence=0.6, reasoning="Default route.")
+            decision = RouteDecision(
+                agent="general",
+                confidence=0.6,
+                reasoning="Default route.",
+            )
         return FakeRunResult(decision)
 
 
 class Session(BaseModel):
     id: UUID
-    pinned_agent: Optional[str] = None
+    pinned_agent: str | None = None
 
 
 class CreateSessionResponse(BaseModel):
@@ -55,7 +63,9 @@ class CreateSessionResponse(BaseModel):
 
 
 class PinRequest(BaseModel):
-    pinned_agent: Optional[str] = Field(default=None, description="If set, bypasses classifier.")
+    pinned_agent: str | None = Field(
+        default=None, description="If set, bypasses classifier."
+    )
 
 
 class MessageRequest(BaseModel):
@@ -67,21 +77,33 @@ class MessageResponse(BaseModel):
     used_agent: str
     was_pinned: bool
     output: Any
-    classifier_decision: Optional[dict] = None
-    validated_decision: Optional[dict] = None
+    classifier_decision: dict | None = None
+    validated_decision: dict | None = None
 
 
 app = FastAPI(title="agent-registry-router: pinned bypass example")
 
 
 # In-memory sessions (demo only)
-SESSIONS: Dict[UUID, Session] = {}
+SESSIONS: dict[UUID, Session] = {}
 
 
 # Registry and toy agents (demo only)
 registry = AgentRegistry()
-registry.register(AgentRegistration(name="general", description="Handles general queries.", routable=True))
-registry.register(AgentRegistration(name="special", description="Handles special queries.", routable=True))
+registry.register(
+    AgentRegistration(
+        name="general",
+        description="Handles general queries.",
+        routable=True,
+    )
+)
+registry.register(
+    AgentRegistration(
+        name="special",
+        description="Handles special queries.",
+        routable=True,
+    )
+)
 registry.register(
     AgentRegistration(
         name="internal_tool",
@@ -90,7 +112,7 @@ registry.register(
     )
 )
 
-AGENTS: Dict[str, Any] = {
+AGENTS: dict[str, Any] = {
     "general": ToyAgent("general"),
     "special": ToyAgent("special"),
     "internal_tool": ToyAgent("internal_tool"),
@@ -130,7 +152,10 @@ async def send_message(session_id: UUID, req: MessageRequest) -> MessageResponse
     result = await dispatcher.route_and_run(
         req.content,
         classifier_deps={"session_id": str(session_id)},
-        deps_for_agent=lambda agent_name: {"session_id": str(session_id), "agent": agent_name},
+        deps_for_agent=lambda agent_name: {
+            "session_id": str(session_id),
+            "agent": agent_name,
+        },
         pinned_agent=session.pinned_agent,
     )
 
@@ -139,8 +164,14 @@ async def send_message(session_id: UUID, req: MessageRequest) -> MessageResponse
         used_agent=result.agent_name,
         was_pinned=result.was_pinned,
         output=result.output,
-        classifier_decision=result.classifier_decision.model_dump() if result.classifier_decision else None,
-        validated_decision=result.validated_decision.model_dump() if result.validated_decision else None,
+        classifier_decision=(
+            result.classifier_decision.model_dump()
+            if result.classifier_decision
+            else None
+        ),
+        validated_decision=(
+            result.validated_decision.model_dump()
+            if result.validated_decision
+            else None
+        ),
     )
-
-

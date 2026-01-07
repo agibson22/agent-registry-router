@@ -47,7 +47,9 @@ def test_build_classifier_system_prompt_appends_extra_instructions() -> None:
 
     preamble = "You are a query classifier."
     extra = "Important: The UI uses @mentions."
-    prompt = build_classifier_system_prompt(registry, preamble=preamble, extra_instructions=extra)
+    prompt = build_classifier_system_prompt(
+        registry, preamble=preamble, extra_instructions=extra
+    )
 
     assert prompt.startswith(preamble + " " + extra)
 
@@ -59,7 +61,9 @@ def test_build_classifier_system_prompt_preserves_registration_order() -> None:
     registry.register(AgentRegistration(name="gamma", description="C"))
 
     prompt = build_classifier_system_prompt(registry)
-    assert prompt.index("**alpha**") < prompt.index("**beta**") < prompt.index("**gamma**")
+    assert (
+        prompt.index("**alpha**") < prompt.index("**beta**") < prompt.index("**gamma**")
+    )
 
 
 def test_build_classifier_system_prompt_raises_when_no_routable_agents() -> None:
@@ -83,5 +87,3 @@ def test_build_classifier_system_prompt_respects_max_chars() -> None:
 
     with pytest.raises(RegistryError):
         build_classifier_system_prompt(registry, max_prompt_chars=10)
-
-

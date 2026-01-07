@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Optional
+from typing import Any
 
 from pydantic import BaseModel, Field
 
@@ -11,15 +11,19 @@ from agent_registry_router.core.registry import AgentRegistry, _normalize_agent_
 class RouteDecision(BaseModel):
     """Structured routing decision emitted by a classifier."""
 
-    agent: str = Field(description="Chosen agent name (must be a routable registered agent).")
+    agent: str = Field(
+        description="Chosen agent name (must be a routable registered agent)."
+    )
     confidence: float = Field(
         ge=0.0,
         le=1.0,
         description="Confidence in the routing decision, 0.0-1.0.",
     )
-    reasoning: Optional[str] = Field(default=None, description="Short explanation for the choice.")
+    reasoning: str | None = Field(
+        default=None, description="Short explanation for the choice."
+    )
 
-    def model_post_init(self, __context) -> None:  # type: ignore[override]
+    def model_post_init(self, __context: Any) -> None:  # type: ignore[override]
         self.agent = _normalize_agent_name(self.agent)
 
 
@@ -30,7 +34,7 @@ class ValidatedRouteDecision(RouteDecision):
         default=False,
         description="True if the decision was changed to the default agent due to validation.",
     )
-    fallback_reason: Optional[str] = Field(
+    fallback_reason: str | None = Field(
         default=None,
         description="Reason the decision fell back to the default agent.",
     )
@@ -50,11 +54,13 @@ def validate_route_decision(
         raise InvalidFallback("No routable agents registered.")
 
     if normalized_default not in routable:
-        raise InvalidFallback(f"Default agent '{default_agent}' is not a routable registered agent.")
+        raise InvalidFallback(
+            f"Default agent '{default_agent}' is not a routable registered agent."
+        )
 
     if decision.agent not in routable:
-        raise InvalidRouteDecision(f"Agent '{decision.agent}' is not a routable registered agent.")
+        raise InvalidRouteDecision(
+            f"Agent '{decision.agent}' is not a routable registered agent."
+        )
 
     return ValidatedRouteDecision(**decision.model_dump(), did_fallback=False)
-
-

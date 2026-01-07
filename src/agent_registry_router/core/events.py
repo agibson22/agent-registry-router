@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, Dict, Optional
+from typing import Any
 
 
 @dataclass(frozen=True)
@@ -11,7 +11,5 @@ class RoutingEvent:
     """Structured routing event emitted during classification/dispatch."""
 
     kind: str
-    payload: Dict[str, Any]
-    error: Optional[BaseException] = None
-
-
+    payload: dict[str, Any]
+    error: BaseException | None = None

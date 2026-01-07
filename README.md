@@ -61,7 +61,10 @@ validated = validate_route_decision(decision, registry=registry, default_agent="
 
 ```bash
 uv pip install -e ".[dev]"
-pytest
+ruff check .
+black --check .
+mypy --config-file pyproject.mypy.ini .
+pytest --cov=agent_registry_router --cov-fail-under=85
 ```
 
 ## Example: FastAPI pinned bypass

@@ -23,4 +23,3 @@ class InvalidFallback(RoutingError):
 
 class AgentNotFound(RoutingError):
     """Raised when a resolved agent cannot be located for dispatch."""
-

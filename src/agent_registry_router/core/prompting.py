@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-from typing import Optional
-
 from agent_registry_router.core.exceptions import RegistryError
 from agent_registry_router.core.registry import AgentRegistry
 
@@ -10,9 +8,9 @@ def build_classifier_system_prompt(
     registry: AgentRegistry,
     *,
     default_agent: str = "general",
-    preamble: Optional[str] = None,
-    extra_instructions: Optional[str] = None,
-    max_prompt_chars: Optional[int] = None,
+    preamble: str | None = None,
+    extra_instructions: str | None = None,
+    max_prompt_chars: int | None = None,
 ) -> str:
     """Build a classifier system prompt dynamically from registry agent descriptions."""
     descriptions = registry.routable_descriptions()
@@ -48,5 +46,3 @@ def build_classifier_system_prompt(
             f"Classifier prompt exceeds max_prompt_chars={max_prompt_chars} (got {len(prompt)})."
         )
     return prompt
-
-

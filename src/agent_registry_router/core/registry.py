@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-from typing import Any, Dict, List, Mapping, Optional
+from collections.abc import Mapping
+from typing import Any
 
 from pydantic import BaseModel, Field
 
@@ -23,14 +24,18 @@ class AgentRegistration(BaseModel):
     """
 
     name: str = Field(description="Stable agent identifier (normalized to lowercase).")
-    description: str = Field(description="Short description used to build classifier prompts.")
+    description: str = Field(
+        description="Short description used to build classifier prompts."
+    )
     routable: bool = Field(
         default=True,
         description="If false, excluded from classifier prompt building and routing targets.",
     )
     deps_type: Any = Field(
         default=None,
-        description="Optional dependency type/metadata for adapters (core does not instantiate deps).",
+        description=(
+            "Optional dependency type/metadata for adapters (core does not instantiate deps)."
+        ),
     )
 
     def model_post_init(self, __context: Any) -> None:
@@ -45,34 +50,41 @@ class AgentRegistry:
     """Registry of agent metadata used for prompt building and routing validation."""
 
     def __init__(self) -> None:
-        self._agents: Dict[str, AgentRegistration] = {}
+        self._agents: dict[str, AgentRegistration] = {}
 
     @classmethod
-    def from_descriptions(cls, descriptions: Mapping[str, str], *, routable: bool = True) -> "AgentRegistry":
+    def from_descriptions(
+        cls,
+        descriptions: Mapping[str, str],
+        *,
+        routable: bool = True,
+    ) -> AgentRegistry:
         """Convenience constructor for building a registry from name->description mappings."""
         registry = cls()
         for name, description in descriptions.items():
-            registry.register(AgentRegistration(name=name, description=description, routable=routable))
+            registry.register(
+                AgentRegistration(name=name, description=description, routable=routable)
+            )
         return registry
 
     def register(self, registration: AgentRegistration) -> None:
         """Register (or overwrite) an agent registration."""
         self._agents[_normalize_agent_name(registration.name)] = registration
 
-    def get(self, name: str) -> Optional[AgentRegistration]:
+    def get(self, name: str) -> AgentRegistration | None:
         """Get a registration by name."""
         return self._agents.get(_normalize_agent_name(name))
 
-    def all_names(self) -> List[str]:
+    def all_names(self) -> list[str]:
         return list(self._agents.keys())
 
-    def routable_names(self) -> List[str]:
+    def routable_names(self) -> list[str]:
         return [name for name, reg in self._agents.items() if reg.routable]
 
-    def descriptions(self) -> Dict[str, str]:
+    def descriptions(self) -> dict[str, str]:
         return {name: reg.description for name, reg in self._agents.items()}
 
-    def routable_descriptions(self) -> Dict[str, str]:
-        return {name: reg.description for name, reg in self._agents.items() if reg.routable}
-
-
+    def routable_descriptions(self) -> dict[str, str]:
+        return {
+            name: reg.description for name, reg in self._agents.items() if reg.routable
+        }

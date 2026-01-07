@@ -1,17 +1,19 @@
 from __future__ import annotations
 
 import logging
+from collections.abc import Callable
 from dataclasses import dataclass
-from typing import Any, Callable, Optional, Protocol
+from typing import Any, Protocol
 
 from pydantic import BaseModel
+from pydantic_core import ValidationError
 
 from agent_registry_router.core import (
     AgentNotFound,
     AgentRegistry,
     InvalidRouteDecision,
-    RoutingEvent,
     RouteDecision,
+    RoutingEvent,
     ValidatedRouteDecision,
     validate_route_decision,
 )
@@ -40,7 +42,10 @@ def _coerce_route_decision(obj: Any) -> RouteDecision:
     if isinstance(obj, RouteDecision):
         return obj
     if isinstance(obj, dict):
-        return RouteDecision(**obj)
+        try:
+            return RouteDecision(**obj)
+        except ValidationError as exc:
+            raise InvalidRouteDecision(str(exc)) from exc
     if isinstance(obj, BaseModel):
         data = obj.model_dump()
         if "agent" in data and "confidence" in data:
@@ -55,7 +60,9 @@ def _coerce_route_decision(obj: Any) -> RouteDecision:
     confidence = getattr(obj, "confidence", None)
     reasoning = getattr(obj, "reasoning", None)
     if agent is None or confidence is None:
-        raise InvalidRouteDecision("Classifier output must provide at least 'agent' and 'confidence'.")
+        raise InvalidRouteDecision(
+            "Classifier output must provide at least 'agent' and 'confidence'."
+        )
     return RouteDecision(agent=agent, confidence=confidence, reasoning=reasoning)
 
 
@@ -63,8 +70,8 @@ def _coerce_route_decision(obj: Any) -> RouteDecision:
 class DispatchResult:
     agent_name: str
     output: Any
-    validated_decision: Optional[ValidatedRouteDecision]
-    classifier_decision: Optional[RouteDecision]
+    validated_decision: ValidatedRouteDecision | None
+    classifier_decision: RouteDecision | None
     was_pinned: bool
 
 
@@ -76,10 +83,10 @@ class PydanticAIDispatcher:
         *,
         registry: AgentRegistry,
         classifier_agent: AgentLike,
-        get_agent: Callable[[str], Optional[AgentLike]],
+        get_agent: Callable[[str], AgentLike | None],
         default_agent: str = "general",
-        on_event: Optional[Callable[[RoutingEvent], None]] = None,
-        logger: Optional[logging.Logger] = None,
+        on_event: Callable[[RoutingEvent], None] | None = None,
+        logger: logging.Logger | None = None,
     ) -> None:
         self._registry = registry
         self._classifier_agent = classifier_agent
@@ -88,7 +95,9 @@ class PydanticAIDispatcher:
         self._on_event = on_event
         self._logger = logger or logging.getLogger(__name__)
 
-    def _emit(self, kind: str, payload: dict, error: Optional[BaseException] = None) -> None:
+    def _emit(
+        self, kind: str, payload: dict, error: BaseException | None = None
+    ) -> None:
         event = RoutingEvent(kind=kind, payload=payload, error=error)
         if self._on_event:
             try:
@@ -107,7 +116,7 @@ class PydanticAIDispatcher:
         *,
         classifier_deps: Any,
         deps_for_agent: Callable[[str], Any],
-        pinned_agent: Optional[str] = None,
+        pinned_agent: str | None = None,
     ) -> DispatchResult:
         """Route a message to an agent and run it.
 
@@ -139,7 +148,11 @@ class PydanticAIDispatcher:
         decision = _coerce_route_decision(classifier_out)
         self._emit(
             "classifier_run_success",
-            {"message": message, "agent": decision.agent, "confidence": decision.confidence},
+            {
+                "message": message,
+                "agent": decision.agent,
+                "confidence": decision.confidence,
+            },
         )
 
         validated = validate_route_decision(
@@ -158,7 +171,9 @@ class PydanticAIDispatcher:
 
         agent = self._get_agent(validated.agent)
         if agent is None:
-            error = AgentNotFound(f"Agent '{validated.agent}' not found (after validation).")
+            error = AgentNotFound(
+                f"Agent '{validated.agent}' not found (after validation)."
+            )
             self._emit("agent_resolve_failed", {"agent": validated.agent}, error=error)
             raise error
 
@@ -174,5 +189,3 @@ class PydanticAIDispatcher:
             classifier_decision=decision,
             was_pinned=False,
         )
-
-
