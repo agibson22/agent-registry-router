@@ -5,6 +5,8 @@ This adapter provides a small **dispatcher** that runs:
 - **pinned session** → skip classifier → dispatch directly
 - otherwise → classifier → validate (fallback) → dispatch
 
+It also supports **streaming dispatch** for the selected agent.
+
 It is intentionally **duck-typed** (no hard dependency on `pydantic_ai` imports): any agent object with:
 
 ```python
@@ -32,6 +34,10 @@ uv pip install "agent-registry-router[pydanticai]"
   - `classifier_deps: Any`: passed to the classifier agent
   - `deps_for_agent(agent_name: str) -> Any`: factory for the selected agent deps
   - `pinned_agent: str | None`: if set and resolvable, bypasses classifier (even if not routable)
+
+- `dispatcher.route_and_stream(...) -> AsyncIterator[AgentStreamChunk]`
+  - Streams only the **selected agent** (classifier output is never yielded).
+  - `stream_classifier: bool = False`: if enabled, consumes a streaming classifier internally to completion, then streams only the chosen agent.
 
 Returns `DispatchResult`:
 
@@ -65,6 +71,19 @@ result = await dispatcher.route_and_run(
     pinned_agent=None,
 )
 print(result.agent_name, result.was_pinned)
+```
+
+## Streaming example
+
+```python
+from agent_registry_router.adapters.pydantic_ai import PydanticAIDispatcher
+
+async for chunk in dispatcher.route_and_stream(
+    "hello",
+    classifier_deps=classifier_deps,
+    deps_for_agent=lambda agent_name: deps_for_agent(agent_name),
+):
+    print(chunk.agent_name, chunk.chunk)
 ```
 
 

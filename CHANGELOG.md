@@ -6,6 +6,14 @@ All notable changes to this repository will be documented in this file.
 
 - TBD
 
+## v0.2.3
+
+- Add streaming dispatch support to the PydanticAI adapter: `PydanticAIDispatcher.route_and_stream(...)`.
+- Add typed streaming payload `AgentStreamChunk` and export it from `agent_registry_router.adapters.pydantic_ai`.
+- Preserve pinned bypass + fail-fast routing/validation behavior in streaming mode; emit `agent_stream_chunk` and `agent_stream_end` events.
+- Add optional internally-consumed classifier streaming support (streamed classifier output is never yielded; only the chosen agent is streamed).
+- Expand test coverage for streaming paths and common misconfigurations (lint/typecheck/coverage gates remain enforced).
+
 ## v0.2.0
 
 - Change routing to fail-fast when classifier selects an unknown/non-routable agent or registry/default is invalid.

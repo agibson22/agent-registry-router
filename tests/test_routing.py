@@ -84,3 +84,12 @@ def test_registry_rejects_empty_name() -> None:
     registry = AgentRegistry()
     with pytest.raises(RegistryError):
         registry.register(AgentRegistration(name="   ", description="bad"))
+
+
+def test_registry_get_normalizes_name() -> None:
+    registry = AgentRegistry()
+    registry.register(AgentRegistration(name="general", description="General help."))
+
+    reg = registry.get("  GENERAL  ")
+    assert reg is not None
+    assert reg.name == "general"
