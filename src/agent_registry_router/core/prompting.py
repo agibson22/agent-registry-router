@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from typing import Optional
 
+from agent_registry_router.core.exceptions import RegistryError
 from agent_registry_router.core.registry import AgentRegistry
 
 
@@ -14,6 +15,8 @@ def build_classifier_system_prompt(
 ) -> str:
     """Build a classifier system prompt dynamically from registry agent descriptions."""
     descriptions = registry.routable_descriptions()
+    if not descriptions:
+        raise RegistryError("No routable agents are registered.")
     agent_sections = [f"**{name}**: {desc}" for name, desc in descriptions.items()]
 
     prompt_parts: list[str] = []
@@ -29,10 +32,7 @@ def build_classifier_system_prompt(
         base = base + " " + extra_instructions.strip()
     prompt_parts.append(base)
 
-    if agent_sections:
-        prompt_parts.append("\n\n".join(agent_sections))
-    else:
-        prompt_parts.append("No routable agents are registered.")
+    prompt_parts.append("\n\n".join(agent_sections))
 
     prompt_parts.append(
         "Provide high confidence (0.8-1.0) for clear matches, "

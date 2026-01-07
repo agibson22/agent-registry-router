@@ -6,6 +6,8 @@ from pydantic import BaseModel, Field
 
 from agent_registry_router.core.exceptions import RegistryError
 
+MAX_DESCRIPTION_LENGTH = 512
+
 
 def _normalize_agent_name(name: str) -> str:
     if not name or not name.strip():
@@ -33,6 +35,10 @@ class AgentRegistration(BaseModel):
 
     def model_post_init(self, __context: Any) -> None:
         self.name = _normalize_agent_name(self.name)
+        if len(self.description) > MAX_DESCRIPTION_LENGTH:
+            raise RegistryError(
+                f"Agent description exceeds {MAX_DESCRIPTION_LENGTH} characters: '{self.name}'"
+            )
 
 
 class AgentRegistry:

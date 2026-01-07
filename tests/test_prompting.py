@@ -1,4 +1,11 @@
-from agent_registry_router.core import AgentRegistration, AgentRegistry, build_classifier_system_prompt
+import pytest
+
+from agent_registry_router.core import (
+    AgentRegistration,
+    AgentRegistry,
+    RegistryError,
+    build_classifier_system_prompt,
+)
 
 
 def test_build_classifier_system_prompt_includes_routable_agents_only() -> None:
@@ -43,5 +50,28 @@ def test_build_classifier_system_prompt_appends_extra_instructions() -> None:
     prompt = build_classifier_system_prompt(registry, preamble=preamble, extra_instructions=extra)
 
     assert prompt.startswith(preamble + " " + extra)
+
+
+def test_build_classifier_system_prompt_preserves_registration_order() -> None:
+    registry = AgentRegistry()
+    registry.register(AgentRegistration(name="alpha", description="A"))
+    registry.register(AgentRegistration(name="beta", description="B"))
+    registry.register(AgentRegistration(name="gamma", description="C"))
+
+    prompt = build_classifier_system_prompt(registry)
+    assert prompt.index("**alpha**") < prompt.index("**beta**") < prompt.index("**gamma**")
+
+
+def test_build_classifier_system_prompt_raises_when_no_routable_agents() -> None:
+    registry = AgentRegistry()
+    with pytest.raises(RegistryError):
+        build_classifier_system_prompt(registry)
+
+
+def test_agent_description_length_limit() -> None:
+    registry = AgentRegistry()
+    too_long = "x" * 513
+    with pytest.raises(RegistryError):
+        registry.register(AgentRegistration(name="longy", description=too_long))
 
 

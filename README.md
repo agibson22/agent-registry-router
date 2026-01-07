@@ -50,6 +50,7 @@ validated = validate_route_decision(decision, registry=registry, default_agent="
 - Registry validation uses `RegistryError`; routing errors derive from `RoutingError`.
 - Confidence adjustment on invalid routes is unchanged; pinned invalid falls back to the classifier.
 - Prompt listing preserves registration order; only routable agents are included.
+- Agent descriptions are capped at 512 characters; prompts cannot be built without routable agents.
 
 ## Adapters
 
