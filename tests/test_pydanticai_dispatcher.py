@@ -44,9 +44,7 @@ class FakeStreamedRunResult:
     def __init__(self, chunks: list[str]):
         self._chunks = chunks
 
-    async def stream_text(
-        self, *, delta: bool = False
-    ) -> AsyncIterator[str]:  # noqa: ARG002
+    async def stream_text(self, *, delta: bool = False) -> AsyncIterator[str]:  # noqa: ARG002
         for chunk in self._chunks:
             yield chunk
 
@@ -79,9 +77,7 @@ class FakeStreamingAgent:
         self.called = False
         self.last_deps: Any | None = None
 
-    def run_stream(
-        self, message: str, *, deps: Any
-    ) -> FakeRunStreamContextManager:  # noqa: ARG002
+    def run_stream(self, message: str, *, deps: Any) -> FakeRunStreamContextManager:  # noqa: ARG002
         self.called = True
         self.last_deps = deps
         return FakeRunStreamContextManager(self._streamed)
@@ -93,9 +89,7 @@ class FakeResponseStreamingAgent:
         self.called = False
         self.last_deps: Any | None = None
 
-    def run_stream(
-        self, message: str, *, deps: Any
-    ) -> FakeRunStreamContextManager:  # noqa: ARG002
+    def run_stream(self, message: str, *, deps: Any) -> FakeRunStreamContextManager:  # noqa: ARG002
         self.called = True
         self.last_deps = deps
         return FakeRunStreamContextManager(self._streamed)
@@ -105,9 +99,7 @@ class FakeStreamingAgentMissingStreamResponses:
     def __init__(self) -> None:
         self._streamed = FakeStreamedRunResult(["x"])
 
-    def run_stream(
-        self, message: str, *, deps: Any
-    ) -> FakeRunStreamContextManager:  # noqa: ARG002
+    def run_stream(self, message: str, *, deps: Any) -> FakeRunStreamContextManager:  # noqa: ARG002
         return FakeRunStreamContextManager(self._streamed)
 
 
@@ -125,9 +117,7 @@ class FakeStreamingAgentNoDelta:
         self._streamed = FakeStreamedRunResultNoDelta(chunks)
         self.called = False
 
-    def run_stream(
-        self, message: str, *, deps: Any
-    ) -> FakeRunStreamContextManager:  # noqa: ARG002
+    def run_stream(self, message: str, *, deps: Any) -> FakeRunStreamContextManager:  # noqa: ARG002
         self.called = True
         return FakeRunStreamContextManager(self._streamed)  # type: ignore[arg-type]
 
@@ -242,9 +232,7 @@ def test_dispatcher_classifier_output_as_basemodel_is_accepted() -> None:
         confidence: float
         reasoning: str | None = None
 
-    classifier = FakeAgent(
-        DecisionModel(agent="special", confidence=0.9, reasoning="Ok")
-    )
+    classifier = FakeAgent(DecisionModel(agent="special", confidence=0.9, reasoning="Ok"))
     special = FakeAgent({"answer": "from special"})
     agents: dict[str, FakeAgent] = {
         "special": special,
@@ -290,9 +278,7 @@ def test_dispatcher_classifier_output_via_attribute_access_is_accepted() -> None
     assert result.agent_name == "special"
 
 
-def test_dispatcher_classifier_output_missing_fields_via_attribute_access_raises() -> (
-    None
-):
+def test_dispatcher_classifier_output_missing_fields_via_attribute_access_raises() -> None:
     registry = AgentRegistry()
     registry.register(AgentRegistration(name="general", description="General help."))
 
@@ -349,9 +335,7 @@ def test_dispatcher_classifier_routes_to_selected_agent() -> None:
     registry.register(AgentRegistration(name="general", description="General help."))
     registry.register(AgentRegistration(name="special", description="Special help."))
 
-    classifier = FakeAgent(
-        RouteDecision(agent="special", confidence=0.8, reasoning="Match.")
-    )
+    classifier = FakeAgent(RouteDecision(agent="special", confidence=0.8, reasoning="Match."))
     special = FakeAgent({"answer": "from special"})
     agents: dict[str, FakeAgent] = {
         "special": special,
@@ -376,9 +360,7 @@ def test_dispatcher_classifier_routes_to_selected_agent() -> None:
 def test_dispatcher_pinned_agent_rejects_whitespace() -> None:
     registry = AgentRegistry()
     registry.register(AgentRegistration(name="general", description="General help."))
-    classifier = FakeAgent(
-        RouteDecision(agent="general", confidence=0.9, reasoning="Ok")
-    )
+    classifier = FakeAgent(RouteDecision(agent="general", confidence=0.9, reasoning="Ok"))
     agents: dict[str, FakeAgent] = {"general": FakeAgent({"answer": "from general"})}
 
     dispatcher = PydanticAIDispatcher(
@@ -398,9 +380,7 @@ def test_dispatcher_falls_back_when_classifier_selects_unknown_agent() -> None:
     registry.register(AgentRegistration(name="general", description="General help."))
     registry.register(AgentRegistration(name="special", description="Special help."))
 
-    classifier = FakeAgent(
-        RouteDecision(agent="unknown", confidence=0.8, reasoning="Oops.")
-    )
+    classifier = FakeAgent(RouteDecision(agent="unknown", confidence=0.8, reasoning="Oops."))
     general = FakeAgent({"answer": "from general"})
     agents: dict[str, FakeAgent] = {
         "general": general,
@@ -423,9 +403,7 @@ def test_dispatcher_agent_resolve_failure_emits_and_raises() -> None:
     registry.register(AgentRegistration(name="general", description="General help."))
     registry.register(AgentRegistration(name="special", description="Special help."))
 
-    classifier = FakeAgent(
-        RouteDecision(agent="special", confidence=0.9, reasoning="Ok")
-    )
+    classifier = FakeAgent(RouteDecision(agent="special", confidence=0.9, reasoning="Ok"))
     agents: dict[str, FakeAgent] = {"general": FakeAgent({"answer": "from general"})}
     events: list[RoutingEvent] = []
 
@@ -449,9 +427,7 @@ def test_dispatcher_pinned_invalid_emits_then_routes() -> None:
     registry.register(AgentRegistration(name="general", description="General help."))
     registry.register(AgentRegistration(name="special", description="Special help."))
 
-    classifier = FakeAgent(
-        RouteDecision(agent="special", confidence=0.9, reasoning="Ok")
-    )
+    classifier = FakeAgent(RouteDecision(agent="special", confidence=0.9, reasoning="Ok"))
     agents: dict[str, FakeAgent] = {
         "special": FakeAgent({"answer": "from special"}),
         "general": FakeAgent({"answer": "from general"}),
@@ -497,9 +473,7 @@ def test_dispatcher_event_hook_failure_is_swallowed() -> None:
     registry = AgentRegistry()
     registry.register(AgentRegistration(name="general", description="General help."))
 
-    classifier = FakeAgent(
-        RouteDecision(agent="general", confidence=0.9, reasoning="Ok")
-    )
+    classifier = FakeAgent(RouteDecision(agent="general", confidence=0.9, reasoning="Ok"))
     agents: dict[str, FakeAgent] = {"general": FakeAgent({"answer": "from general"})}
 
     def bad_hook(event: RoutingEvent) -> None:
@@ -517,9 +491,7 @@ def test_dispatcher_event_hook_failure_is_swallowed() -> None:
     assert result.agent_name == "general"
 
 
-def _run(
-    dispatcher: PydanticAIDispatcher, pinned_agent: str | None = None
-) -> DispatchResult:
+def _run(dispatcher: PydanticAIDispatcher, pinned_agent: str | None = None) -> DispatchResult:
     # tiny sync harness around an async method, without adding async test deps
     import asyncio
 
@@ -537,9 +509,7 @@ def _run(
 def test_dispatcher_emits_events() -> None:
     registry = AgentRegistry()
     registry.register(AgentRegistration(name="general", description="General help."))
-    classifier = FakeAgent(
-        RouteDecision(agent="general", confidence=0.9, reasoning="Ok")
-    )
+    classifier = FakeAgent(RouteDecision(agent="general", confidence=0.9, reasoning="Ok"))
     general = FakeAgent({"answer": "from general"})
     agents: dict[str, FakeAgent] = {"general": general}
 
@@ -568,9 +538,7 @@ def test_dispatcher_route_and_stream_happy_path_yields_chunks_and_events() -> No
     registry.register(AgentRegistration(name="general", description="General help."))
     registry.register(AgentRegistration(name="special", description="Special help."))
 
-    classifier = FakeAgent(
-        RouteDecision(agent="special", confidence=0.8, reasoning="Ok")
-    )
+    classifier = FakeAgent(RouteDecision(agent="special", confidence=0.8, reasoning="Ok"))
     special = FakeStreamingAgent(["a", "b", "c"])
     agents: dict[str, Any] = {"special": special}
     events: list[RoutingEvent] = []
@@ -606,9 +574,7 @@ def test_dispatcher_route_and_stream_agent_resolve_failure_emits_and_raises() ->
     registry.register(AgentRegistration(name="general", description="General help."))
     registry.register(AgentRegistration(name="special", description="Special help."))
 
-    classifier = FakeAgent(
-        RouteDecision(agent="special", confidence=0.9, reasoning="Ok")
-    )
+    classifier = FakeAgent(RouteDecision(agent="special", confidence=0.9, reasoning="Ok"))
     agents: dict[str, Any] = {"general": FakeStreamingAgent(["x"])}
     events: list[RoutingEvent] = []
 
@@ -686,9 +652,7 @@ def test_dispatcher_route_and_stream_rejects_whitespace_pinned() -> None:
     registry.register(AgentRegistration(name="general", description="General help."))
     registry.register(AgentRegistration(name="special", description="Special help."))
 
-    classifier = FakeAgent(
-        RouteDecision(agent="general", confidence=0.1, reasoning="Ok")
-    )
+    classifier = FakeAgent(RouteDecision(agent="general", confidence=0.1, reasoning="Ok"))
     agents: dict[str, Any] = {"special": FakeStreamingAgent(["hi"])}
 
     dispatcher = PydanticAIDispatcher(
@@ -719,9 +683,7 @@ def test_dispatcher_route_and_stream_pinned_invalid_emits_then_routes() -> None:
     registry.register(AgentRegistration(name="general", description="General help."))
     registry.register(AgentRegistration(name="special", description="Special help."))
 
-    classifier = FakeAgent(
-        RouteDecision(agent="special", confidence=0.9, reasoning="Ok")
-    )
+    classifier = FakeAgent(RouteDecision(agent="special", confidence=0.9, reasoning="Ok"))
     agents: dict[str, Any] = {"special": FakeStreamingAgent(["x"])}
     events: list[RoutingEvent] = []
 
@@ -759,9 +721,7 @@ def test_dispatcher_route_and_stream_pinned_raises_when_agent_not_streamable() -
     registry.register(AgentRegistration(name="general", description="General help."))
     registry.register(AgentRegistration(name="special", description="Special help."))
 
-    classifier = FakeAgent(
-        RouteDecision(agent="general", confidence=0.1, reasoning="Ok")
-    )
+    classifier = FakeAgent(RouteDecision(agent="general", confidence=0.1, reasoning="Ok"))
     agents: dict[str, Any] = {"special": FakeAgent({"answer": "no stream"})}
 
     dispatcher = PydanticAIDispatcher(
@@ -786,16 +746,12 @@ def test_dispatcher_route_and_stream_pinned_raises_when_agent_not_streamable() -
         asyncio.run(go())
 
 
-def test_dispatcher_route_and_stream_pinned_raises_when_stream_result_missing_stream_text() -> (
-    None
-):
+def test_dispatcher_route_and_stream_pinned_raises_when_stream_result_missing_stream_text() -> None:
     registry = AgentRegistry()
     registry.register(AgentRegistration(name="general", description="General help."))
     registry.register(AgentRegistration(name="special", description="Special help."))
 
-    classifier = FakeAgent(
-        RouteDecision(agent="general", confidence=0.1, reasoning="Ok")
-    )
+    classifier = FakeAgent(RouteDecision(agent="general", confidence=0.1, reasoning="Ok"))
     agents: dict[str, Any] = {"special": FakeStreamingAgentMissingStreamText()}
 
     dispatcher = PydanticAIDispatcher(
@@ -820,16 +776,12 @@ def test_dispatcher_route_and_stream_pinned_raises_when_stream_result_missing_st
         asyncio.run(go())
 
 
-def test_dispatcher_route_and_stream_pinned_supports_stream_text_without_delta_kwarg() -> (
-    None
-):
+def test_dispatcher_route_and_stream_pinned_supports_stream_text_without_delta_kwarg() -> None:
     registry = AgentRegistry()
     registry.register(AgentRegistration(name="general", description="General help."))
     registry.register(AgentRegistration(name="special", description="Special help."))
 
-    classifier = FakeAgent(
-        RouteDecision(agent="general", confidence=0.1, reasoning="Ok")
-    )
+    classifier = FakeAgent(RouteDecision(agent="general", confidence=0.1, reasoning="Ok"))
     agents: dict[str, Any] = {"special": FakeStreamingAgentNoDelta(["a", "b"])}
 
     dispatcher = PydanticAIDispatcher(
@@ -861,9 +813,7 @@ def test_dispatcher_route_and_stream_raises_when_agent_not_streamable() -> None:
     registry.register(AgentRegistration(name="general", description="General help."))
     registry.register(AgentRegistration(name="special", description="Special help."))
 
-    classifier = FakeAgent(
-        RouteDecision(agent="special", confidence=0.9, reasoning="Ok")
-    )
+    classifier = FakeAgent(RouteDecision(agent="special", confidence=0.9, reasoning="Ok"))
     # This agent implements only `run`, not `run_stream` (a common misconfiguration).
     agents: dict[str, Any] = {"special": FakeAgent({"answer": "no stream"})}
 
@@ -888,16 +838,12 @@ def test_dispatcher_route_and_stream_raises_when_agent_not_streamable() -> None:
         asyncio.run(go())
 
 
-def test_dispatcher_route_and_stream_raises_when_stream_result_missing_stream_text() -> (
-    None
-):
+def test_dispatcher_route_and_stream_raises_when_stream_result_missing_stream_text() -> None:
     registry = AgentRegistry()
     registry.register(AgentRegistration(name="general", description="General help."))
     registry.register(AgentRegistration(name="special", description="Special help."))
 
-    classifier = FakeAgent(
-        RouteDecision(agent="special", confidence=0.9, reasoning="Ok")
-    )
+    classifier = FakeAgent(RouteDecision(agent="special", confidence=0.9, reasoning="Ok"))
     agents: dict[str, Any] = {"special": FakeStreamingAgentMissingStreamText()}
 
     dispatcher = PydanticAIDispatcher(
@@ -926,9 +872,7 @@ def test_dispatcher_route_and_stream_supports_stream_text_without_delta_kwarg() 
     registry.register(AgentRegistration(name="general", description="General help."))
     registry.register(AgentRegistration(name="special", description="Special help."))
 
-    classifier = FakeAgent(
-        RouteDecision(agent="special", confidence=0.9, reasoning="Ok")
-    )
+    classifier = FakeAgent(RouteDecision(agent="special", confidence=0.9, reasoning="Ok"))
     agents: dict[str, Any] = {"special": FakeStreamingAgentNoDelta(["a", "b"])}
 
     dispatcher = PydanticAIDispatcher(
@@ -942,9 +886,7 @@ def test_dispatcher_route_and_stream_supports_stream_text_without_delta_kwarg() 
     assert [c.chunk for c in chunks] == ["a", "b"]
 
 
-def test_dispatcher_route_and_stream_streaming_classifier_is_consumed_internally() -> (
-    None
-):
+def test_dispatcher_route_and_stream_streaming_classifier_is_consumed_internally() -> None:
     registry = AgentRegistry()
     registry.register(AgentRegistration(name="general", description="General help."))
     registry.register(AgentRegistration(name="special", description="Special help."))
@@ -983,9 +925,7 @@ def test_dispatcher_route_and_stream_streaming_classifier_is_consumed_internally
     assert "classifier_run_success" in kinds
 
 
-def test_dispatcher_route_and_stream_streaming_classifier_without_final_event_raises() -> (
-    None
-):
+def test_dispatcher_route_and_stream_streaming_classifier_without_final_event_raises() -> None:
     registry = AgentRegistry()
     registry.register(AgentRegistration(name="general", description="General help."))
     registry.register(AgentRegistration(name="special", description="Special help."))
@@ -1025,9 +965,7 @@ def test_dispatcher_route_and_stream_streaming_classifier_falls_back_to_run() ->
     registry.register(AgentRegistration(name="general", description="General help."))
     registry.register(AgentRegistration(name="special", description="Special help."))
 
-    classifier = FakeAgent(
-        RouteDecision(agent="special", confidence=0.9, reasoning="Ok")
-    )
+    classifier = FakeAgent(RouteDecision(agent="special", confidence=0.9, reasoning="Ok"))
     agents: dict[str, Any] = {"special": FakeStreamingAgent(["x"])}
 
     dispatcher = PydanticAIDispatcher(
@@ -1062,9 +1000,7 @@ def test_dispatcher_route_and_stream_streaming_classifier_run_stream_stream_outp
     registry.register(AgentRegistration(name="general", description="General help."))
     registry.register(AgentRegistration(name="special", description="Special help."))
 
-    streamed = FakeClassifierStreamedRunResultOutputSync(
-        [{"agent": "special", "confidence": 0.9}]
-    )
+    streamed = FakeClassifierStreamedRunResultOutputSync([{"agent": "special", "confidence": 0.9}])
     classifier = FakeStreamingClassifierRunStream(streamed)
     agents: dict[str, Any] = {"special": FakeStreamingAgent(["x"])}
 
@@ -1099,9 +1035,7 @@ def test_dispatcher_route_and_stream_streaming_classifier_run_stream_stream_outp
     registry.register(AgentRegistration(name="general", description="General help."))
     registry.register(AgentRegistration(name="special", description="Special help."))
 
-    streamed = FakeClassifierStreamedRunResultOutputAsync(
-        [{"agent": "special", "confidence": 0.9}]
-    )
+    streamed = FakeClassifierStreamedRunResultOutputAsync([{"agent": "special", "confidence": 0.9}])
     classifier = FakeStreamingClassifierRunStream(streamed)
     agents: dict[str, Any] = {"special": FakeStreamingAgent(["x"])}
 
@@ -1129,16 +1063,12 @@ def test_dispatcher_route_and_stream_streaming_classifier_run_stream_stream_outp
     assert [c.chunk for c in chunks] == ["x"]
 
 
-def test_dispatcher_route_and_stream_streaming_classifier_run_stream_stream_text_no_delta() -> (
-    None
-):
+def test_dispatcher_route_and_stream_streaming_classifier_run_stream_stream_text_no_delta() -> None:
     registry = AgentRegistry()
     registry.register(AgentRegistration(name="general", description="General help."))
     registry.register(AgentRegistration(name="special", description="Special help."))
 
-    streamed = FakeClassifierStreamedRunResultTextNoDelta(
-        [{"agent": "special", "confidence": 0.9}]
-    )
+    streamed = FakeClassifierStreamedRunResultTextNoDelta([{"agent": "special", "confidence": 0.9}])
     classifier = FakeStreamingClassifierRunStream(streamed)
     agents: dict[str, Any] = {"special": FakeStreamingAgent(["x"])}
 
@@ -1173,9 +1103,7 @@ def test_dispatcher_route_and_stream_streaming_classifier_run_stream_no_stream_m
     registry.register(AgentRegistration(name="general", description="General help."))
     registry.register(AgentRegistration(name="special", description="Special help."))
 
-    classifier = FakeStreamingClassifierRunStream(
-        FakeClassifierStreamedRunResultNoStreams()
-    )
+    classifier = FakeStreamingClassifierRunStream(FakeClassifierStreamedRunResultNoStreams())
     agents: dict[str, Any] = {"special": FakeStreamingAgent(["x"])}
     dispatcher = PydanticAIDispatcher(
         registry=registry,
@@ -1199,16 +1127,12 @@ def test_dispatcher_route_and_stream_streaming_classifier_run_stream_no_stream_m
         asyncio.run(go())
 
 
-def test_dispatcher_route_and_stream_streaming_classifier_run_stream_no_output_raises() -> (
-    None
-):
+def test_dispatcher_route_and_stream_streaming_classifier_run_stream_no_output_raises() -> None:
     registry = AgentRegistry()
     registry.register(AgentRegistration(name="general", description="General help."))
     registry.register(AgentRegistration(name="special", description="Special help."))
 
-    classifier = FakeStreamingClassifierRunStream(
-        FakeClassifierStreamedRunResultNoOutput()
-    )
+    classifier = FakeStreamingClassifierRunStream(FakeClassifierStreamedRunResultNoOutput())
     agents: dict[str, Any] = {"special": FakeStreamingAgent(["x"])}
     dispatcher = PydanticAIDispatcher(
         registry=registry,
@@ -1237,12 +1161,8 @@ def test_stream_responses_happy_path_exposes_streamed_run() -> None:
     registry.register(AgentRegistration(name="general", description="General help."))
     registry.register(AgentRegistration(name="special", description="Special help."))
 
-    classifier = FakeAgent(
-        RouteDecision(agent="special", confidence=0.8, reasoning="Ok")
-    )
-    special = FakeResponseStreamingAgent(
-        [({"partial": 1}, False), ({"final": True}, True)]
-    )
+    classifier = FakeAgent(RouteDecision(agent="special", confidence=0.8, reasoning="Ok"))
+    special = FakeResponseStreamingAgent([({"partial": 1}, False), ({"final": True}, True)])
     agents: dict[str, Any] = {"special": special}
     events: list[RoutingEvent] = []
 
@@ -1361,24 +1281,18 @@ def test_route_and_stream_responses_requires_final_streaming_decision() -> None:
             deps_for_agent=lambda _name: {"deps": True},
             stream_classifier=True,
         ):
-            raise AssertionError(
-                "should not stream when classifier omits final decision"
-            )
+            raise AssertionError("should not stream when classifier omits final decision")
 
     with pytest.raises(InvalidRouteDecision, match="no final result event"):
         asyncio.run(go())
 
 
-def test_dispatcher_route_and_stream_responses_pinned_invalid_emits_then_routes() -> (
-    None
-):
+def test_dispatcher_route_and_stream_responses_pinned_invalid_emits_then_routes() -> None:
     registry = AgentRegistry()
     registry.register(AgentRegistration(name="general", description="General help."))
     registry.register(AgentRegistration(name="special", description="Special help."))
 
-    classifier = FakeAgent(
-        RouteDecision(agent="special", confidence=0.9, reasoning="Ok")
-    )
+    classifier = FakeAgent(RouteDecision(agent="special", confidence=0.9, reasoning="Ok"))
     agents: dict[str, Any] = {"special": FakeResponseStreamingAgent([("x", True)])}
     events: list[RoutingEvent] = []
 
@@ -1417,9 +1331,7 @@ def test_stream_responses_raises_when_missing_stream_responses() -> None:
     registry.register(AgentRegistration(name="general", description="General help."))
     registry.register(AgentRegistration(name="special", description="Special help."))
 
-    classifier = FakeAgent(
-        RouteDecision(agent="special", confidence=0.9, reasoning="Ok")
-    )
+    classifier = FakeAgent(RouteDecision(agent="special", confidence=0.9, reasoning="Ok"))
     agents: dict[str, Any] = {"special": FakeStreamingAgentMissingStreamResponses()}
 
     dispatcher = PydanticAIDispatcher(
@@ -1438,24 +1350,18 @@ def test_stream_responses_raises_when_missing_stream_responses() -> None:
             deps_for_agent=lambda _name: {"deps": True},
         ) as session:
             async for _item in session.iter_responses():
-                raise AssertionError(
-                    "should not yield when stream_responses isn't supported"
-                )
+                raise AssertionError("should not yield when stream_responses isn't supported")
 
     with pytest.raises(TypeError, match="missing stream_responses"):
         asyncio.run(go())
 
 
-def test_dispatcher_route_and_stream_responses_raises_when_agent_not_streamable() -> (
-    None
-):
+def test_dispatcher_route_and_stream_responses_raises_when_agent_not_streamable() -> None:
     registry = AgentRegistry()
     registry.register(AgentRegistration(name="general", description="General help."))
     registry.register(AgentRegistration(name="special", description="Special help."))
 
-    classifier = FakeAgent(
-        RouteDecision(agent="special", confidence=0.9, reasoning="Ok")
-    )
+    classifier = FakeAgent(RouteDecision(agent="special", confidence=0.9, reasoning="Ok"))
     agents: dict[str, Any] = {"special": FakeAgent({"answer": "no stream"})}
 
     dispatcher = PydanticAIDispatcher(
