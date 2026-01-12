@@ -1334,9 +1334,7 @@ def test_dispatcher_route_and_stream_responses_pinned_bypasses_classifier() -> N
     assert "classifier_run_start" not in kinds
 
 
-def test_dispatcher_route_and_stream_responses_streaming_classifier_without_final_event_raises() -> (
-    None
-):
+def test_route_and_stream_responses_requires_final_streaming_decision() -> None:
     registry = AgentRegistry()
     registry.register(AgentRegistration(name="general", description="General help."))
     registry.register(AgentRegistration(name="special", description="Special help."))
