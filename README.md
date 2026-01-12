@@ -109,6 +109,10 @@ mypy --config-file pyproject.mypy.ini .
 pytest --cov=agent_registry_router --cov-fail-under=85
 ```
 
+## Automation
+- Dependabot: weekly PRs for `pip` (root `pyproject.toml`) and GitHub Actions.
+- pre-commit.ci: runs `ruff` and `black` on PRs and can auto-fix commits.
+
 ## Example: FastAPI pinned bypass
 See `examples/fastapi_pinned_bypass/`.
 
