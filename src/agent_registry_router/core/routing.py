@@ -11,17 +11,13 @@ from agent_registry_router.core.registry import AgentRegistry, _normalize_agent_
 class RouteDecision(BaseModel):
     """Structured routing decision emitted by a classifier."""
 
-    agent: str = Field(
-        description="Chosen agent name (must be a routable registered agent)."
-    )
+    agent: str = Field(description="Chosen agent name (must be a routable registered agent).")
     confidence: float = Field(
         ge=0.0,
         le=1.0,
         description="Confidence in the routing decision, 0.0-1.0.",
     )
-    reasoning: str | None = Field(
-        default=None, description="Short explanation for the choice."
-    )
+    reasoning: str | None = Field(default=None, description="Short explanation for the choice.")
 
     def model_post_init(self, __context: Any) -> None:  # type: ignore[override]
         self.agent = _normalize_agent_name(self.agent)
@@ -59,8 +55,6 @@ def validate_route_decision(
         )
 
     if decision.agent not in routable:
-        raise InvalidRouteDecision(
-            f"Agent '{decision.agent}' is not a routable registered agent."
-        )
+        raise InvalidRouteDecision(f"Agent '{decision.agent}' is not a routable registered agent.")
 
     return ValidatedRouteDecision(**decision.model_dump(), did_fallback=False)

@@ -24,9 +24,7 @@ class AgentRegistration(BaseModel):
     """
 
     name: str = Field(description="Stable agent identifier (normalized to lowercase).")
-    description: str = Field(
-        description="Short description used to build classifier prompts."
-    )
+    description: str = Field(description="Short description used to build classifier prompts.")
     routable: bool = Field(
         default=True,
         description="If false, excluded from classifier prompt building and routing targets.",
@@ -85,6 +83,4 @@ class AgentRegistry:
         return {name: reg.description for name, reg in self._agents.items()}
 
     def routable_descriptions(self) -> dict[str, str]:
-        return {
-            name: reg.description for name, reg in self._agents.items() if reg.routable
-        }
+        return {name: reg.description for name, reg in self._agents.items() if reg.routable}
