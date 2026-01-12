@@ -51,6 +51,13 @@ def _normalize_name(name: str) -> str:
     return name.strip().lower()
 
 
+def _normalize_and_validate_pinned(name: str) -> str:
+    trimmed = name.strip()
+    if not trimmed:
+        raise InvalidRouteDecision("Pinned agent cannot be empty or whitespace.")
+    return trimmed.lower()
+
+
 def _extract_output(run_result: Any) -> Any:
     return getattr(run_result, "output", run_result)
 
@@ -279,8 +286,8 @@ class PydanticAIDispatcher:
         - Otherwise, the dispatcher runs the classifier, validates its decision against
           `registry.routable_names()`, and dispatches to the selected agent (with fallback).
         """
-        if pinned_agent:
-            pinned = _normalize_name(pinned_agent)
+        if pinned_agent is not None:
+            pinned = _normalize_and_validate_pinned(pinned_agent)
             agent = self._get_agent(pinned)
             if agent is not None:
                 self._emit("pinned_bypass", {"agent": pinned, "message": message})
@@ -359,8 +366,8 @@ class PydanticAIDispatcher:
         is streamed outward. If `stream_classifier` is enabled, classifier streaming is
         consumed internally to completion (never yielded).
         """
-        if pinned_agent:
-            pinned = _normalize_name(pinned_agent)
+        if pinned_agent is not None:
+            pinned = _normalize_and_validate_pinned(pinned_agent)
             agent = self._get_agent(pinned)
             if agent is not None:
                 self._emit("pinned_bypass", {"agent": pinned, "message": message})
@@ -526,8 +533,8 @@ class PydanticAIDispatcher:
             RouteDecision | None,
             bool,
         ]:
-            if pinned_agent:
-                pinned = _normalize_name(pinned_agent)
+            if pinned_agent is not None:
+                pinned = _normalize_and_validate_pinned(pinned_agent)
                 agent = self._get_agent(pinned)
                 if agent is not None:
                     self._emit("pinned_bypass", {"agent": pinned, "message": message})

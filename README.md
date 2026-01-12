@@ -85,6 +85,7 @@ validated = validate_route_decision(decision, registry=registry, default_agent="
 - Prompt listing preserves registration order; only routable agents are included.
 - Agent descriptions are capped at 512 characters; prompts cannot be built without routable agents. Optional `max_prompt_chars` can bound the generated prompt.
 - Observability: `PydanticAIDispatcher` accepts `on_event` callback (receives `RoutingEvent`) and optional logger; emits events for classifier run, validation, pinned bypass, agent resolution, and agent run.
+- Streaming classifiers must emit a final decision/output (run result/event); otherwise `InvalidRouteDecision` is raised.
 
 ## API contracts
 

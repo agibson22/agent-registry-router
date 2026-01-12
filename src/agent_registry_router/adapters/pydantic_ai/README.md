@@ -51,6 +51,7 @@ This adapter supports two PydanticAI-native streaming modes for the **selected a
 Both support:
 - `pinned_agent: str | None`: if set and resolvable, bypasses the classifier (even if not routable)
 - `stream_classifier: bool = False`: if enabled, consumes a streaming classifier internally to completion (classifier streaming is never yielded)
+- Streaming classifiers **must emit a final decision/output** (e.g., a result event or final streamed item); otherwise the dispatcher raises `InvalidRouteDecision`.
 
 Returns `DispatchResult`:
 

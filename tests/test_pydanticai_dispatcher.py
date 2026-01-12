@@ -373,6 +373,26 @@ def test_dispatcher_classifier_routes_to_selected_agent() -> None:
     assert result.validated_decision.did_fallback is False
 
 
+def test_dispatcher_pinned_agent_rejects_whitespace() -> None:
+    registry = AgentRegistry()
+    registry.register(AgentRegistration(name="general", description="General help."))
+    classifier = FakeAgent(
+        RouteDecision(agent="general", confidence=0.9, reasoning="Ok")
+    )
+    agents: dict[str, FakeAgent] = {"general": FakeAgent({"answer": "from general"})}
+
+    dispatcher = PydanticAIDispatcher(
+        registry=registry,
+        classifier_agent=classifier,
+        get_agent=lambda name: agents.get(name),
+        default_agent="general",
+    )
+
+    with pytest.raises(InvalidRouteDecision, match="Pinned agent cannot be empty"):
+        _run(dispatcher, pinned_agent="   ")
+    assert classifier.called is False
+
+
 def test_dispatcher_falls_back_when_classifier_selects_unknown_agent() -> None:
     registry = AgentRegistry()
     registry.register(AgentRegistration(name="general", description="General help."))
@@ -659,6 +679,39 @@ def test_dispatcher_route_and_stream_pinned_bypasses_classifier() -> None:
     assert "pinned_bypass" in kinds
     assert "agent_stream_end" in kinds
     assert "agent_run_success" in kinds
+
+
+def test_dispatcher_route_and_stream_rejects_whitespace_pinned() -> None:
+    registry = AgentRegistry()
+    registry.register(AgentRegistration(name="general", description="General help."))
+    registry.register(AgentRegistration(name="special", description="Special help."))
+
+    classifier = FakeAgent(
+        RouteDecision(agent="general", confidence=0.1, reasoning="Ok")
+    )
+    agents: dict[str, Any] = {"special": FakeStreamingAgent(["hi"])}
+
+    dispatcher = PydanticAIDispatcher(
+        registry=registry,
+        classifier_agent=classifier,
+        get_agent=lambda name: agents.get(name),
+        default_agent="general",
+    )
+
+    import asyncio
+
+    async def go() -> None:
+        async for _chunk in dispatcher.route_and_stream(
+            "hello",
+            classifier_deps={"k": "v"},
+            deps_for_agent=lambda _name: {"deps": True},
+            pinned_agent=" ",
+        ):
+            raise AssertionError("should not stream when pinned agent is whitespace")
+
+    with pytest.raises(InvalidRouteDecision, match="Pinned agent cannot be empty"):
+        asyncio.run(go())
+    assert classifier.called is False
 
 
 def test_dispatcher_route_and_stream_pinned_invalid_emits_then_routes() -> None:
@@ -1279,6 +1332,43 @@ def test_dispatcher_route_and_stream_responses_pinned_bypasses_classifier() -> N
     kinds = [e.kind for e in events]
     assert "pinned_bypass" in kinds
     assert "classifier_run_start" not in kinds
+
+
+def test_dispatcher_route_and_stream_responses_streaming_classifier_without_final_event_raises() -> (
+    None
+):
+    registry = AgentRegistry()
+    registry.register(AgentRegistration(name="general", description="General help."))
+    registry.register(AgentRegistration(name="special", description="Special help."))
+
+    classifier = FakeStreamingClassifier(
+        RouteDecision(agent="special", confidence=0.9, reasoning="Ok"),
+        include_final_event=False,
+    )
+    agents: dict[str, Any] = {"special": FakeResponseStreamingAgent([("x", True)])}
+
+    dispatcher = PydanticAIDispatcher(
+        registry=registry,
+        classifier_agent=classifier,
+        get_agent=lambda name: agents.get(name),
+        default_agent="general",
+    )
+
+    import asyncio
+
+    async def go() -> None:
+        async with dispatcher.route_and_stream_responses(
+            "hello",
+            classifier_deps={"k": "v"},
+            deps_for_agent=lambda _name: {"deps": True},
+            stream_classifier=True,
+        ):
+            raise AssertionError(
+                "should not stream when classifier omits final decision"
+            )
+
+    with pytest.raises(InvalidRouteDecision, match="no final result event"):
+        asyncio.run(go())
 
 
 def test_dispatcher_route_and_stream_responses_pinned_invalid_emits_then_routes() -> (

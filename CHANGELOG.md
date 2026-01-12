@@ -4,7 +4,9 @@ All notable changes to this repository will be documented in this file.
 
 ## Unreleased
 
-- TBD
+- Guard pinned-agent inputs by rejecting empty/whitespace values before routing.
+- Clarify streaming classifier contract (must emit a final decision/output).
+- Add a conservative upper bound for `pydantic` (<3.0) for forward-compat safety.
 
 ## v0.2.5
 
