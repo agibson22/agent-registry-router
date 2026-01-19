@@ -184,11 +184,7 @@ class ResponseStreamSession(AbstractAsyncContextManager["ResponseStreamSession"]
 
         try:
             async for item in stream_responses(**kwargs):
-                if (
-                    isinstance(item, tuple)
-                    and len(item) == 2
-                    and isinstance(item[1], bool)
-                ):
+                if isinstance(item, tuple) and len(item) == 2 and isinstance(item[1], bool):
                     model_response, is_last = item
                 else:
                     model_response, is_last = item, False
@@ -256,9 +252,7 @@ class PydanticAIDispatcher:
         self._on_event = on_event
         self._logger = logger or logging.getLogger(__name__)
 
-    def _emit(
-        self, kind: str, payload: dict, error: BaseException | None = None
-    ) -> None:
+    def _emit(self, kind: str, payload: dict, error: BaseException | None = None) -> None:
         event = RoutingEvent(kind=kind, payload=payload, error=error)
         if self._on_event:
             try:
@@ -332,9 +326,7 @@ class PydanticAIDispatcher:
 
         agent = self._get_agent(validated.agent)
         if agent is None:
-            error = AgentNotFound(
-                f"Agent '{validated.agent}' not found (after validation)."
-            )
+            error = AgentNotFound(f"Agent '{validated.agent}' not found (after validation).")
             self._emit("agent_resolve_failed", {"agent": validated.agent}, error=error)
             raise error
 
@@ -440,9 +432,7 @@ class PydanticAIDispatcher:
 
         agent = self._get_agent(validated.agent)
         if agent is None:
-            error = AgentNotFound(
-                f"Agent '{validated.agent}' not found (after validation)."
-            )
+            error = AgentNotFound(f"Agent '{validated.agent}' not found (after validation).")
             self._emit("agent_resolve_failed", {"agent": validated.agent}, error=error)
             raise error
 
@@ -575,12 +565,8 @@ class PydanticAIDispatcher:
 
             agent = self._get_agent(validated.agent)
             if agent is None:
-                error = AgentNotFound(
-                    f"Agent '{validated.agent}' not found (after validation)."
-                )
-                self._emit(
-                    "agent_resolve_failed", {"agent": validated.agent}, error=error
-                )
+                error = AgentNotFound(f"Agent '{validated.agent}' not found (after validation).")
+                self._emit("agent_resolve_failed", {"agent": validated.agent}, error=error)
                 raise error
 
             self._emit("agent_resolve_success", {"agent": validated.agent})
@@ -602,9 +588,7 @@ class PydanticAIDispatcher:
         return _RouteAndStreamResponsesSession(
             resolve=_resolve,
             debounce_by=debounce_by,
-            outer_emit=lambda kind, payload, error: self._emit(
-                kind, payload, error=error
-            ),
+            outer_emit=lambda kind, payload, error: self._emit(kind, payload, error=error),
         )
 
     async def _run_classifier_decision(
@@ -621,9 +605,7 @@ class PydanticAIDispatcher:
                 message, classifier_deps=classifier_deps
             )
         else:
-            classifier_run = await self._classifier_agent.run(
-                message, deps=classifier_deps
-            )
+            classifier_run = await self._classifier_agent.run(message, deps=classifier_deps)
             classifier_out = _extract_output(classifier_run)
             decision = _coerce_route_decision(classifier_out)
 
@@ -658,9 +640,7 @@ class PydanticAIDispatcher:
                 if maybe_result is not None:
                     last_result = maybe_result
             if last_result is None:
-                raise InvalidRouteDecision(
-                    "Streaming classifier produced no final result event."
-                )
+                raise InvalidRouteDecision("Streaming classifier produced no final result event.")
             classifier_out = _extract_output(last_result)
             return _coerce_route_decision(classifier_out)
 
