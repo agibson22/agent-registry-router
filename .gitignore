@@ -20,4 +20,7 @@ pip-wheel-metadata/
 .idea/
 .vscode/
 *.log
+.env
+evals/results/*.json
+docs/
 
