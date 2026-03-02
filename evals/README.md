@@ -56,11 +56,12 @@ The fixture format matches the library's API directly. See `fixtures.json` for t
 
 ## Models
 
-| Key | Provider | Model |
-|-----|----------|-------|
-| `gpt-4o-mini` | OpenAI | gpt-4o-mini |
-| `claude-haiku` | Anthropic | claude-haiku-4-5-20251001 |
-| `gemini-flash` | Google | gemini-2.5-flash |
+| Key | Provider | Model | Type |
+|-----|----------|-------|------|
+| `gpt-4o-mini` | OpenAI | gpt-4o-mini | LLM |
+| `claude-haiku` | Anthropic | claude-haiku-4-5-20251001 | LLM |
+| `gemini-flash` | Google | gemini-2.5-flash | LLM |
+| `faiss-openai` | FAISS + OpenAI | text-embedding-3-small | Embedding |
 
 ## Output
 

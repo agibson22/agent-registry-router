@@ -82,6 +82,12 @@ MODEL_CONFIGS: dict[str, dict[str, Any]] = {
         "input_cost_per_1m": 0.15,
         "output_cost_per_1m": 0.60,
     },
+    "faiss-openai": {
+        "provider": "faiss",
+        "model": "text-embedding-3-small",
+        "input_cost_per_1m": 0.02,
+        "output_cost_per_1m": 0.0,
+    },
 }
 
 
@@ -209,10 +215,49 @@ def classify_google(
     }
 
 
+def _openai_embed(texts: list[str]) -> list[list[float]]:
+    from openai import OpenAI
+
+    client = OpenAI()
+    response = client.embeddings.create(model="text-embedding-3-small", input=texts)
+    return [item.embedding for item in response.data]
+
+
+_faiss_classifiers: dict[str, Any] = {}
+
+
+def classify_faiss(
+    system_prompt: str, user_message: str, model: str
+) -> dict[str, Any]:
+    """Classify using FAISS. system_prompt is ignored; classifier is cached per scenario."""
+    from agent_registry_router.core.classifier import FaissClassifier
+
+    scenario_key = system_prompt
+    if scenario_key not in _faiss_classifiers:
+        raise RuntimeError("FAISS classifier not initialized for this scenario.")
+
+    classifier: FaissClassifier = _faiss_classifiers[scenario_key]
+    start = time.perf_counter()
+    decision = classifier.classify(user_message)
+    latency_ms = (time.perf_counter() - start) * 1000
+
+    return {
+        "decision": {
+            "agent": decision.agent,
+            "confidence": decision.confidence,
+            "reasoning": decision.reasoning,
+        },
+        "latency_ms": round(latency_ms, 1),
+        "input_tokens": 0,
+        "output_tokens": 0,
+    }
+
+
 PROVIDER_CLASSIFIERS = {
     "openai": classify_openai,
     "anthropic": classify_anthropic,
     "google": classify_google,
+    "faiss": classify_faiss,
 }
 
 
@@ -243,9 +288,20 @@ def run_eval(
             registry, default_agent=scenario["default_agent"]
         )
 
+        faiss_initialized = False
         for model_key in model_keys:
             config = MODEL_CONFIGS[model_key]
             classify_fn = PROVIDER_CLASSIFIERS[config["provider"]]
+
+            if config["provider"] == "faiss" and not faiss_initialized:
+                from agent_registry_router.core.classifier import FaissClassifier
+
+                _faiss_classifiers[system_prompt] = FaissClassifier(
+                    registry=registry,
+                    embed_fn=_openai_embed,
+                    default_agent=scenario["default_agent"],
+                )
+                faiss_initialized = True
 
             print(f"\n--- {scenario['id']} / {model_key} ---")
 
