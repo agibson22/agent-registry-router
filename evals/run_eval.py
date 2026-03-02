@@ -226,9 +226,7 @@ def _openai_embed(texts: list[str]) -> list[list[float]]:
 _faiss_classifiers: dict[str, Any] = {}
 
 
-def classify_faiss(
-    system_prompt: str, user_message: str, model: str
-) -> dict[str, Any]:
+def classify_faiss(system_prompt: str, user_message: str, model: str) -> dict[str, Any]:
     """Classify using FAISS. system_prompt is ignored; classifier is cached per scenario."""
     from agent_registry_router.core.classifier import FaissClassifier
 

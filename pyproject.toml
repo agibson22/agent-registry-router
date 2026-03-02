@@ -30,6 +30,9 @@ faiss = [
   "faiss-cpu",
   "numpy",
 ]
+openai-agents = [
+  "openai-agents",
+]
 dev = [
   "pytest>=8.0.0",
   "pytest-cov>=4.1.0",
