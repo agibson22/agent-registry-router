@@ -33,6 +33,9 @@ faiss = [
 openai-agents = [
   "openai-agents",
 ]
+google-adk = [
+  "google-adk",
+]
 dev = [
   "pytest>=8.0.0",
   "pytest-cov>=4.1.0",
