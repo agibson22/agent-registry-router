@@ -9,6 +9,7 @@ from agent_registry_router.core.exceptions import (
     RegistryError,
     RoutingError,
 )
+from agent_registry_router.core.observability import StructuredLogger
 from agent_registry_router.core.prompting import build_classifier_system_prompt
 from agent_registry_router.core.registry import AgentRegistration, AgentRegistry
 from agent_registry_router.core.routing import (
@@ -27,6 +28,7 @@ __all__ = [
     "AgentNotFound",
     "AgentRegistration",
     "AgentRegistry",
+    "StructuredLogger",
     "build_classifier_system_prompt",
     "RouteDecision",
     "ValidatedRouteDecision",
