@@ -96,9 +96,7 @@ def load_fixtures(path: Path) -> dict[str, Any]:
         return json.load(f)
 
 
-def classify_openai(
-    system_prompt: str, user_message: str, model: str
-) -> dict[str, Any]:
+def classify_openai(system_prompt: str, user_message: str, model: str) -> dict[str, Any]:
     from openai import OpenAI
 
     client = OpenAI()
@@ -139,9 +137,7 @@ ANTHROPIC_ROUTE_TOOL = {
 }
 
 
-def classify_anthropic(
-    system_prompt: str, user_message: str, model: str
-) -> dict[str, Any]:
+def classify_anthropic(system_prompt: str, user_message: str, model: str) -> dict[str, Any]:
     from anthropic import Anthropic
 
     client = Anthropic()
@@ -171,15 +167,11 @@ def classify_anthropic(
     }
 
 
-def classify_google(
-    system_prompt: str, user_message: str, model: str
-) -> dict[str, Any]:
+def classify_google(system_prompt: str, user_message: str, model: str) -> dict[str, Any]:
     from google import genai
     from google.genai.types import GenerateContentConfig
 
-    google_schema = {
-        k: v for k, v in RESPONSE_SCHEMA.items() if k != "additionalProperties"
-    }
+    google_schema = {k: v for k, v in RESPONSE_SCHEMA.items() if k != "additionalProperties"}
 
     client = genai.Client()
     start = time.perf_counter()
@@ -306,9 +298,7 @@ def run_eval(
             for case in scenario["cases"]:
                 completed += 1
                 try:
-                    response = classify_fn(
-                        system_prompt, case["message"], config["model"]
-                    )
+                    response = classify_fn(system_prompt, case["message"], config["model"])
                     decision = response["decision"]
                     agent_picked = decision.get("agent", "MISSING")
                     correct = is_correct(case["expected_agent"], agent_picked)

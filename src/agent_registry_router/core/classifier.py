@@ -89,9 +89,7 @@ class FaissClassifier:
             reasoning=f"Nearest agent by embedding similarity ({confidence:.2f}).",
         )
 
-    def classify_with_scores(
-        self, message: str, top_k: int = 3
-    ) -> list[dict[str, Any]]:
+    def classify_with_scores(self, message: str, top_k: int = 3) -> list[dict[str, Any]]:
         """Classify and return top-k agents with scores, for debugging."""
         import faiss
 

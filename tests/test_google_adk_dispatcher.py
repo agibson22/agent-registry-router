@@ -52,9 +52,7 @@ class FakeRunner:
         output = self._run_results.get(agent.name, "default output")
         return FakeRunResult(output=output)
 
-    def run_stream(
-        self, agent: Any, message: str, **kwargs: Any
-    ) -> AsyncIterator[FakeStreamEvent]:
+    def run_stream(self, agent: Any, message: str, **kwargs: Any) -> AsyncIterator[FakeStreamEvent]:
         async def _gen() -> AsyncIterator[FakeStreamEvent]:
             events = self._stream_events.get(agent.name, [])
             for event in events:
@@ -66,12 +64,8 @@ class FakeRunner:
 def _make_registry() -> AgentRegistry:
     registry = AgentRegistry()
     registry.register(AgentRegistration(name="billing", description="Handles billing."))
-    registry.register(
-        AgentRegistration(name="technical", description="Handles technical issues.")
-    )
-    registry.register(
-        AgentRegistration(name="general", description="Handles general inquiries.")
-    )
+    registry.register(AgentRegistration(name="technical", description="Handles technical issues."))
+    registry.register(AgentRegistration(name="general", description="Handles general inquiries."))
     return registry
 
 
@@ -227,9 +221,7 @@ async def test_route_and_run_emits_events() -> None:
 @pytest.mark.anyio
 async def test_route_and_run_coerces_route_decision() -> None:
     decision = RouteDecision(agent="technical", confidence=0.85, reasoning="direct")
-    runner = FakeRunner(
-        run_results={"classifier": decision, "technical": "Tech response"}
-    )
+    runner = FakeRunner(run_results={"classifier": decision, "technical": "Tech response"})
     dispatcher = _make_dispatcher(runner=runner)
     result = await dispatcher.route_and_run("error in app")
 

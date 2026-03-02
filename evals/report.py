@@ -27,9 +27,7 @@ def load_results(path: Path) -> dict[str, Any]:
         return json.load(f)
 
 
-def group_by(
-    results: list[dict[str, Any]], key: str
-) -> dict[str, list[dict[str, Any]]]:
+def group_by(results: list[dict[str, Any]], key: str) -> dict[str, list[dict[str, Any]]]:
     groups: dict[str, list[dict[str, Any]]] = defaultdict(list)
     for r in results:
         groups[r[key]].append(r)
@@ -139,9 +137,7 @@ def generate_report(data: dict[str, Any]) -> str:
     for model, model_results in by_model.items():
         lines.append(f"### {model}")
         lines.append("")
-        lines.append(
-            "Rows = expected, Columns = predicted. Only misclassifications shown."
-        )
+        lines.append("Rows = expected, Columns = predicted. Only misclassifications shown.")
         lines.append("")
 
         confusion: Counter[tuple[str, str]] = Counter()
@@ -186,12 +182,8 @@ def generate_report(data: dict[str, Any]) -> str:
     if misses:
         lines.append("## Misclassifications")
         lines.append("")
-        lines.append(
-            "| Scenario | Case | Model | Message | Expected | Got | Confidence |"
-        )
-        lines.append(
-            "|----------|------|-------|---------|----------|-----|------------|"
-        )
+        lines.append("| Scenario | Case | Model | Message | Expected | Got | Confidence |")
+        lines.append("|----------|------|-------|---------|----------|-----|------------|")
 
         for r in misses:
             expected = r["expected_agent"]

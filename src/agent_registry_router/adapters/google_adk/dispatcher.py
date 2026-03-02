@@ -157,9 +157,7 @@ class GoogleADKDispatcher:
         self._on_event = on_event
         self._logger = logger or logging.getLogger(__name__)
 
-    def _emit(
-        self, kind: str, payload: dict[str, Any], error: BaseException | None = None
-    ) -> None:
+    def _emit(self, kind: str, payload: dict[str, Any], error: BaseException | None = None) -> None:
         event = RoutingEvent(kind=kind, payload=payload, error=error)
         if self._on_event:
             try:
@@ -225,9 +223,7 @@ class GoogleADKDispatcher:
 
         agent = self._get_agent(validated.agent)
         if agent is None:
-            error = AgentNotFound(
-                f"Agent '{validated.agent}' not found (after validation)."
-            )
+            error = AgentNotFound(f"Agent '{validated.agent}' not found (after validation).")
             self._emit(
                 "agent_resolve_failed",
                 {"agent": validated.agent},
@@ -303,9 +299,7 @@ class GoogleADKDispatcher:
 
         agent = self._get_agent(validated.agent)
         if agent is None:
-            error = AgentNotFound(
-                f"Agent '{validated.agent}' not found (after validation)."
-            )
+            error = AgentNotFound(f"Agent '{validated.agent}' not found (after validation).")
             self._emit(
                 "agent_resolve_failed",
                 {"agent": validated.agent},

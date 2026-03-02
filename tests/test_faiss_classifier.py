@@ -47,23 +47,15 @@ def _make_embed_fn(
 def _make_registry() -> AgentRegistry:
     registry = AgentRegistry()
     registry.register(
-        AgentRegistration(
-            name="billing", description="Handles billing and payment issues."
-        )
+        AgentRegistration(name="billing", description="Handles billing and payment issues.")
     )
     registry.register(
-        AgentRegistration(
-            name="technical", description="Handles technical errors and bugs."
-        )
+        AgentRegistration(name="technical", description="Handles technical errors and bugs.")
     )
     registry.register(
-        AgentRegistration(
-            name="sales", description="Handles pricing and upgrade questions."
-        )
+        AgentRegistration(name="sales", description="Handles pricing and upgrade questions.")
     )
-    registry.register(
-        AgentRegistration(name="general", description="Handles general inquiries.")
-    )
+    registry.register(AgentRegistration(name="general", description="Handles general inquiries."))
     return registry
 
 
@@ -127,15 +119,9 @@ def test_confidence_threshold_routes_to_default() -> None:
         return vectors
 
     registry = AgentRegistry()
-    registry.register(
-        AgentRegistration(name="billing", description="Handles billing issues.")
-    )
-    registry.register(
-        AgentRegistration(name="technical", description="Handles technical errors.")
-    )
-    registry.register(
-        AgentRegistration(name="general", description="Handles sales inquiries.")
-    )
+    registry.register(AgentRegistration(name="billing", description="Handles billing issues."))
+    registry.register(AgentRegistration(name="technical", description="Handles technical errors."))
+    registry.register(AgentRegistration(name="general", description="Handles sales inquiries."))
 
     classifier = FaissClassifier(
         registry=registry,
@@ -184,9 +170,7 @@ def test_non_routable_agents_excluded() -> None:
 
 def test_single_agent_always_matches() -> None:
     registry = AgentRegistry()
-    registry.register(
-        AgentRegistration(name="only_agent", description="The only agent.")
-    )
+    registry.register(AgentRegistration(name="only_agent", description="The only agent."))
 
     classifier = FaissClassifier(registry=registry, embed_fn=_make_embed_fn())
     decision = classifier.classify("literally anything")

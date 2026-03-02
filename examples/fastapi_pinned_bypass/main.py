@@ -63,9 +63,7 @@ class CreateSessionResponse(BaseModel):
 
 
 class PinRequest(BaseModel):
-    pinned_agent: str | None = Field(
-        default=None, description="If set, bypasses classifier."
-    )
+    pinned_agent: str | None = Field(default=None, description="If set, bypasses classifier.")
 
 
 class MessageRequest(BaseModel):
@@ -165,13 +163,9 @@ async def send_message(session_id: UUID, req: MessageRequest) -> MessageResponse
         was_pinned=result.was_pinned,
         output=result.output,
         classifier_decision=(
-            result.classifier_decision.model_dump()
-            if result.classifier_decision
-            else None
+            result.classifier_decision.model_dump() if result.classifier_decision else None
         ),
         validated_decision=(
-            result.validated_decision.model_dump()
-            if result.validated_decision
-            else None
+            result.validated_decision.model_dump() if result.validated_decision else None
         ),
     )

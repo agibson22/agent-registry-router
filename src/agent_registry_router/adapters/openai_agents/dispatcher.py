@@ -144,9 +144,7 @@ class OpenAIAgentsDispatcher:
         self._on_event = on_event
         self._logger = logger or logging.getLogger(__name__)
 
-    def _emit(
-        self, kind: str, payload: dict[str, Any], error: BaseException | None = None
-    ) -> None:
+    def _emit(self, kind: str, payload: dict[str, Any], error: BaseException | None = None) -> None:
         event = RoutingEvent(kind=kind, payload=payload, error=error)
         if self._on_event:
             try:
@@ -185,9 +183,7 @@ class OpenAIAgentsDispatcher:
             self._emit("pinned_invalid", {"pinned": pinned, "message": message})
 
         self._emit("classifier_run_start", {"message": message})
-        classifier_result = await self._runner.run(
-            self._classifier_agent, input=message
-        )
+        classifier_result = await self._runner.run(self._classifier_agent, input=message)
         decision = _coerce_route_decision(classifier_result.final_output)
         self._emit(
             "classifier_run_success",
@@ -214,9 +210,7 @@ class OpenAIAgentsDispatcher:
 
         agent = self._get_agent(validated.agent)
         if agent is None:
-            error = AgentNotFound(
-                f"Agent '{validated.agent}' not found (after validation)."
-            )
+            error = AgentNotFound(f"Agent '{validated.agent}' not found (after validation).")
             self._emit("agent_resolve_failed", {"agent": validated.agent}, error=error)
             raise error
 
@@ -262,9 +256,7 @@ class OpenAIAgentsDispatcher:
             self._emit("pinned_invalid", {"pinned": pinned, "message": message})
 
         self._emit("classifier_run_start", {"message": message})
-        classifier_result = await self._runner.run(
-            self._classifier_agent, input=message
-        )
+        classifier_result = await self._runner.run(self._classifier_agent, input=message)
         decision = _coerce_route_decision(classifier_result.final_output)
         self._emit(
             "classifier_run_success",
@@ -291,9 +283,7 @@ class OpenAIAgentsDispatcher:
 
         agent = self._get_agent(validated.agent)
         if agent is None:
-            error = AgentNotFound(
-                f"Agent '{validated.agent}' not found (after validation)."
-            )
+            error = AgentNotFound(f"Agent '{validated.agent}' not found (after validation).")
             self._emit("agent_resolve_failed", {"agent": validated.agent}, error=error)
             raise error
 
