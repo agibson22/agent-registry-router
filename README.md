@@ -1,120 +1,165 @@
 # agent-registry-router
+
 [![CI](https://img.shields.io/github/actions/workflow/status/agibson22/agent-registry-router/ci.yml?branch=main)](https://github.com/agibson22/agent-registry-router/actions/workflows/ci.yml)
 [![PyPI](https://img.shields.io/pypi/v/agent-registry-router)](https://pypi.org/project/agent-registry-router/)
 [![Python](https://img.shields.io/pypi/pyversions/agent-registry-router)](https://pypi.org/project/agent-registry-router/)
 [![License](https://img.shields.io/badge/license-Apache--2.0-blue)](LICENSE)
 
-Registry-driven LLM routing: build classifier prompts from agent descriptions, validate decisions, and dispatch to other agents.
+Registry-driven LLM routing: build classifier prompts, validate decisions, and dispatch to the right agent.
 
-## What is this? Why use it?
+## Why
 
-`agent-registry-router` helps you route LLM traffic to the right agent by:
-- Keeping a registry of agents
-- Building classifier prompts from that registry
-- Validating classifier decisions with clear, typed errors
-- Dispatching to runtime agents with optional observability hooks (`on_event`) for logging/metrics.
+When you have multiple AI agents, something needs to decide which one handles each user message. Most teams hardcode `if/else` chains or build bespoke classifiers. This library gives you a clean, framework-agnostic way to:
 
-Use it when you need:
-- A stable contract between your classifier and execution layer
-- Deterministic, size-aware prompt construction
-- Lightweight integration with frameworks like PydanticAI
-- Extensibility: plug your own classifier/agents, add hooks for monitoring, and keep routing logic decoupled from business logic
+- **Build classifier prompts** from a registry of agent descriptions
+- **Validate routing decisions** with typed errors (no silent fallbacks)
+- **Dispatch** to the selected agent with observability hooks
+- **Benchmark** classifier accuracy across LLMs and embedding models
 
-## Features
-- Registry-driven classifier prompts (deterministic order, routable-only, size-aware)
-- Fail-fast validation with typed errors (no silent fallbacks)
-- PydanticAI dispatcher with pinned bypass and observability hooks (`on_event`); supports text streaming (`stream_text`) and response streaming (`stream_responses`)
-- Typed package (`py.typed`) and CI gates (ruff/black/mypy/pytest-cov)
-- FastAPI demo with pinned bypass: `examples/fastapi_pinned_bypass/README.md`
+## How It Works
 
-## Scope
-- Routing, validation, observability; bring your own LLM clients/agents.
-- Adapters are opt-in; core stays lightweight.
-
-## Status
-- v0.2.3 — fail-fast by default; adapters namespaced; PydanticAI adapter supports streaming dispatch.
-
-## Install (uv)
-From PyPI:
-
-```bash
-uv pip install agent-registry-router
+```mermaid
+graph LR
+    A[User Message] --> B{Classifier}
+    B -->|LLM| C[Build Prompt from Registry]
+    B -->|FAISS| D[Embed & Similarity Search]
+    C --> E[RouteDecision]
+    D --> E
+    E --> F[Validate Against Registry]
+    F --> G[Dispatch to Agent]
+    G --> H[Response]
 ```
 
-From a checkout of this repo (dev/editable):
+## Install
 
 ```bash
-uv venv
-source .venv/bin/activate
-uv pip install -e .
+pip install agent-registry-router
 ```
 
-## Core usage
+With a framework adapter:
+
+```bash
+pip install "agent-registry-router[pydanticai]"    # PydanticAI
+pip install "agent-registry-router[openai-agents]"  # OpenAI Agents SDK
+pip install "agent-registry-router[google-adk]"     # Google ADK
+pip install "agent-registry-router[faiss]"          # FAISS classifier
+```
+
+## Quick Start
 
 ```python
 from agent_registry_router.core import (
-    AgentRegistration,
     AgentRegistry,
+    AgentRegistration,
     RouteDecision,
     build_classifier_system_prompt,
     validate_route_decision,
 )
 
+# Register your agents
 registry = AgentRegistry()
-registry.register(AgentRegistration(name="general", description="General help."))
-registry.register(AgentRegistration(name="special", description="Special help."))
+registry.register(AgentRegistration(name="billing", description="Handles billing and payments."))
+registry.register(AgentRegistration(name="technical", description="Handles technical support."))
+registry.register(AgentRegistration(name="general", description="Handles general inquiries."))
 
-prompt = build_classifier_system_prompt(
-    registry,
-    preamble="You are a query classifier that routes user messages to the appropriate agent.",
-    default_agent="general",
-)
+# Build a classifier prompt from the registry
+prompt = build_classifier_system_prompt(registry, default_agent="general")
 
-decision = RouteDecision(agent="special", confidence=0.9, reasoning="Clear match.")
+# Validate a routing decision
+decision = RouteDecision(agent="billing", confidence=0.9, reasoning="Payment question.")
 validated = validate_route_decision(decision, registry=registry, default_agent="general")
 ```
 
-## Behavior & errors
-
-- Default agent must be routable; unknown agents or empty registries raise.
-- Classifier selecting a non-routable agent raises `InvalidRouteDecision`.
-- Missing default or no routable agents raises `InvalidFallback`.
-- Dispatcher raises `AgentNotFound` if the chosen agent cannot be resolved.
-- Registry validation uses `RegistryError`; routing errors derive from `RoutingError`.
-- Confidence adjustment on invalid routes is unchanged; pinned invalid falls back to the classifier.
-- Prompt listing preserves registration order; only routable agents are included.
-- Agent descriptions are capped at 512 characters; prompts cannot be built without routable agents. Optional `max_prompt_chars` can bound the generated prompt.
-- Observability: `PydanticAIDispatcher` accepts `on_event` callback (receives `RoutingEvent`) and optional logger; emits events for classifier run, validation, pinned bypass, agent resolution, and agent run.
-- Streaming classifiers must emit a final decision/output (run result/event); otherwise `InvalidRouteDecision` is raised.
-
-## API contracts
-
-- Public imports (`agent_registry_router.core`): `AgentRegistry`, `AgentRegistration`, `RouteDecision`, `ValidatedRouteDecision`, `validate_route_decision`, `build_classifier_system_prompt`, exceptions (`AgentRegistryRouterError`, `RegistryError`, `RoutingError`, `InvalidRouteDecision`, `InvalidFallback`, `AgentNotFound`), and `RoutingEvent`.
-- Adapter: `agent_registry_router.adapters.pydantic_ai` exposes `PydanticAIDispatcher`, `DispatchResult`, `AgentStreamChunk`, `AgentResponseStreamItem`, `ResponseStreamSession`. Adapters stay namespaced (not re-exported at package root).
-- Routing invariants: default agent must be routable; empty registry errors; non-routable selections error; pinned invalid falls back to classifier; classifier output must include `agent` and `confidence` or `InvalidRouteDecision` is raised.
-- Prompt determinism: preserves registration order; only routable agents; optional `max_prompt_chars`; description cap 512 chars.
-- Hooks: `on_event` receives `RoutingEvent(kind, payload, error)`; hook failures are swallowed; logger is optional.
-
 ## Adapters
 
-- **PydanticAI dispatcher**: `src/agent_registry_router/adapters/pydantic_ai/README.md`
+Framework-specific dispatchers that handle classify → validate → dispatch. Each is opt-in — the core has no framework dependencies.
 
-## Tests (uv)
+| Adapter | Install Extra | Dispatcher Class |
+|---------|--------------|-----------------|
+| PydanticAI | `pydanticai` | `PydanticAIDispatcher` |
+| OpenAI Agents SDK | `openai-agents` | `OpenAIAgentsDispatcher` |
+| Google ADK | `google-adk` | `GoogleADKDispatcher` |
 
-```bash
-uv pip install -e ".[dev]"
-ruff check .
-black --check .
-mypy --config-file pyproject.mypy.ini .
-pytest --cov=agent_registry_router --cov-fail-under=85
+All adapters are duck-typed (no runtime imports of the framework). Any object matching the protocol works. All support:
+
+- `route_and_run()` — classify, validate, dispatch
+- `route_and_stream()` — same flow, streaming output
+- Pinned agent bypass (skip classifier, dispatch directly)
+- `on_event` observability hooks
+
+```python
+from agent_registry_router.adapters.pydantic_ai import PydanticAIDispatcher
+from agent_registry_router.adapters.openai_agents import OpenAIAgentsDispatcher
+from agent_registry_router.adapters.google_adk import GoogleADKDispatcher
 ```
 
-## Automation
-- Dependabot: weekly PRs for `pip` (root `pyproject.toml`) and GitHub Actions.
-- pre-commit.ci: runs `ruff` and `black` on PRs and can auto-fix commits.
+## FAISS Classifier
 
-## Example: FastAPI pinned bypass
-See `examples/fastapi_pinned_bypass/`.
+An alternative to LLM-based classification: embed agent descriptions, find the nearest match by cosine similarity. Near-zero latency, near-zero cost.
+
+```python
+from agent_registry_router.core import FaissClassifier
+
+classifier = FaissClassifier(
+    registry=registry,
+    embed_fn=your_embedding_function,  # any callable: list[str] -> list[list[float]]
+)
+decision = classifier.classify("I was charged twice")
+```
+
+## Structured Logging
+
+Built-in JSON logging for routing events. One line to set up.
+
+```python
+from agent_registry_router.core import StructuredLogger
+
+dispatcher = PydanticAIDispatcher(
+    ...,
+    on_event=StructuredLogger(),
+)
+# Produces: {"ts": "...", "event": "classifier_run_success", "agent": "billing", "confidence": 0.92}
+```
+
+## Eval Suite
+
+Benchmarks the classifier prompts this library generates across LLMs and FAISS. Includes fixtures, a runner, and a report generator.
+
+```bash
+make install-eval
+cp .env.example .env  # add your API keys
+make eval
+```
+
+See [`evals/README.md`](evals/README.md) for details. Bring your own fixtures to benchmark your own agent registries.
+
+## Error Handling
+
+Fail-fast with typed exceptions — no silent fallbacks.
+
+- `InvalidRouteDecision` — classifier picked a non-routable agent
+- `InvalidFallback` — default agent isn't routable or registry is empty
+- `AgentNotFound` — validated agent can't be resolved for dispatch
+- `RegistryError` — invalid names, descriptions, or empty registry
+
+## Design Principles
+
+- **Framework-agnostic core**: routing logic has no opinion on your agent framework
+- **Duck-typed adapters**: protocols, not imports — any compatible object works
+- **Fail-fast validation**: typed errors, never silent wrong-agent routing
+- **Deterministic prompts**: registration order preserved, routable-only, size-bounded
+- **Observable**: `on_event` hooks + `StructuredLogger` for production monitoring
+
+## Development
+
+```bash
+make install       # install dev dependencies
+make lint          # ruff + black + mypy
+make test          # pytest with 85% coverage gate
+make format        # auto-format
+make eval          # run classifier benchmarks (requires API keys)
+```
 
 ## License
-Apache-2.0 (see `LICENSE`).
+
+Apache-2.0

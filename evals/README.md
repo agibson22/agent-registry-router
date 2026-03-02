@@ -49,7 +49,7 @@ Test cases live in `fixtures.json`. Each scenario defines:
 ### Bring Your Own Fixtures
 
 ```bash
-source .env && python evals/run_eval.py --fixtures my_fixtures.json
+python evals/run_eval.py --fixtures my_fixtures.json
 ```
 
 The fixture format matches the library's API directly. See `fixtures.json` for the schema.

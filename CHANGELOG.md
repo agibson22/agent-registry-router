@@ -4,6 +4,21 @@ All notable changes to this repository will be documented in this file.
 
 ## Unreleased
 
+### Added
+- **Eval suite**: benchmark classifier prompt quality across LLMs (GPT-4o-mini,
+  Claude Haiku, Gemini Flash) and FAISS. Includes fixtures, runner, and report
+  generator. `make eval` to run.
+- **FAISS classifier**: embedding-based agent routing via cosine similarity as an
+  alternative to LLM classification. Opt-in via `pip install "agent-registry-router[faiss]"`.
+- **OpenAI Agents SDK adapter**: `OpenAIAgentsDispatcher` with `route_and_run()` and
+  `route_and_stream()`. Duck-typed runner injection.
+- **Google ADK adapter**: `GoogleADKDispatcher` with simplified `RunnerLike` protocol
+  wrapping ADK's session-based runner.
+- **Structured logging**: `StructuredLogger` — built-in JSON line handler for routing
+  events. Use as `on_event` callback.
+- **CONTRIBUTING.md**: contributor guide with setup, dev loop, and adapter guide.
+
+### Changed
 - Guard pinned-agent inputs by rejecting empty/whitespace values before routing.
 - Clarify streaming classifier contract (must emit a final decision/output).
 - Add a conservative upper bound for `pydantic` (<3.0) for forward-compat safety.
