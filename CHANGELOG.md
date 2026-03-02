@@ -2,7 +2,7 @@
 
 All notable changes to this repository will be documented in this file.
 
-## Unreleased
+## v0.3.0 — 2026-03-02
 
 ### Added
 - **Eval suite**: benchmark classifier prompt quality across LLMs (GPT-4o-mini,
