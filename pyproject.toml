@@ -26,6 +26,10 @@ dependencies = [
 pydanticai = [
   "pydantic-ai",
 ]
+faiss = [
+  "faiss-cpu",
+  "numpy",
+]
 dev = [
   "pytest>=8.0.0",
   "pytest-cov>=4.1.0",
@@ -56,5 +60,6 @@ exclude = ["**/__pycache__/**"]
 pythonpath = ["src"]
 filterwarnings = [
   "ignore:.*asyncio_default_fixture_loop_scope.*:pytest.PytestDeprecationWarning",
+  "ignore:.*builtin type Swig.*has no __module__ attribute.*:DeprecationWarning",
 ]
 

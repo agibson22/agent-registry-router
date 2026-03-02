@@ -32,3 +32,10 @@ __all__ = [
     "ValidatedRouteDecision",
     "validate_route_decision",
 ]
+
+try:
+    from agent_registry_router.core.classifier import FaissClassifier
+
+    __all__ += ["FaissClassifier"]
+except ImportError:
+    pass

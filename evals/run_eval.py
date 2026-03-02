@@ -38,6 +38,7 @@ def _load_dotenv(path: Path = ROOT_ENV) -> None:
         if key:
             os.environ.setdefault(key.strip(), value.strip())
 
+
 EVALS_DIR = Path(__file__).parent
 DEFAULT_FIXTURES = EVALS_DIR / "fixtures.json"
 RESULTS_DIR = EVALS_DIR / "results"
@@ -139,7 +140,7 @@ def classify_anthropic(
 
     client = Anthropic()
     start = time.perf_counter()
-    response = client.messages.create(
+    response = client.messages.create(  # type: ignore[call-overload]
         model=model,
         max_tokens=256,
         system=system_prompt,
@@ -170,7 +171,9 @@ def classify_google(
     from google import genai
     from google.genai.types import GenerateContentConfig
 
-    google_schema = {k: v for k, v in RESPONSE_SCHEMA.items() if k != "additionalProperties"}
+    google_schema = {
+        k: v for k, v in RESPONSE_SCHEMA.items() if k != "additionalProperties"
+    }
 
     client = genai.Client()
     start = time.perf_counter()
