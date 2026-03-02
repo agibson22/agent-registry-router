@@ -2,12 +2,14 @@ from collections.abc import Callable
 
 import pytest
 
-from agent_registry_router.core import (
+faiss = pytest.importorskip("faiss", reason="faiss-cpu not installed")
+
+from agent_registry_router.core import (  # noqa: E402
     AgentRegistration,
     AgentRegistry,
     RegistryError,
 )
-from agent_registry_router.core.classifier import FaissClassifier
+from agent_registry_router.core.classifier import FaissClassifier  # noqa: E402
 
 
 def _make_embed_fn(

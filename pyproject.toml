@@ -39,6 +39,7 @@ google-adk = [
 dev = [
   "pytest>=8.0.0",
   "pytest-cov>=4.1.0",
+  "anyio[trio]",
   "ruff>=0.7.0",
   "black>=24.8.0",
   "mypy>=1.11.0",
