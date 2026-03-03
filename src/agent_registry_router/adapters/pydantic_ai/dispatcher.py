@@ -6,9 +6,6 @@ from contextlib import AbstractAsyncContextManager
 from dataclasses import dataclass
 from typing import Any, Protocol
 
-from pydantic import BaseModel
-from pydantic_core import ValidationError
-
 from agent_registry_router.core import (
     AgentNotFound,
     AgentRegistry,
@@ -17,6 +14,11 @@ from agent_registry_router.core import (
     RoutingEvent,
     ValidatedRouteDecision,
     validate_route_decision,
+)
+from agent_registry_router.core.routing import (
+    _coerce_route_decision,
+    _normalize_and_validate_pinned,
+    _normalize_name,
 )
 
 
@@ -47,47 +49,8 @@ class StreamEventsAgentLike(Protocol):
     ) -> AsyncIterable[Any]: ...
 
 
-def _normalize_name(name: str) -> str:
-    return name.strip().lower()
-
-
-def _normalize_and_validate_pinned(name: str) -> str:
-    trimmed = name.strip()
-    if not trimmed:
-        raise InvalidRouteDecision("Pinned agent cannot be empty or whitespace.")
-    return trimmed.lower()
-
-
 def _extract_output(run_result: Any) -> Any:
     return getattr(run_result, "output", run_result)
-
-
-def _coerce_route_decision(obj: Any) -> RouteDecision:
-    if isinstance(obj, RouteDecision):
-        return obj
-    if isinstance(obj, dict):
-        try:
-            return RouteDecision(**obj)
-        except ValidationError as exc:
-            raise InvalidRouteDecision(str(exc)) from exc
-    if isinstance(obj, BaseModel):
-        data = obj.model_dump()
-        if "agent" in data and "confidence" in data:
-            # reasoning is optional in our core model
-            return RouteDecision(
-                agent=data["agent"],
-                confidence=data["confidence"],
-                reasoning=data.get("reasoning"),
-            )
-    # Last resort: attribute access
-    agent = getattr(obj, "agent", None)
-    confidence = getattr(obj, "confidence", None)
-    reasoning = getattr(obj, "reasoning", None)
-    if agent is None or confidence is None:
-        raise InvalidRouteDecision(
-            "Classifier output must provide at least 'agent' and 'confidence'."
-        )
-    return RouteDecision(agent=agent, confidence=confidence, reasoning=reasoning)
 
 
 @dataclass(frozen=True)

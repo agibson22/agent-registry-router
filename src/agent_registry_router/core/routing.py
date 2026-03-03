@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import Any
 
 from pydantic import BaseModel, Field
+from pydantic_core import ValidationError
 
 from agent_registry_router.core.exceptions import InvalidFallback, InvalidRouteDecision
 from agent_registry_router.core.registry import AgentRegistry, _normalize_agent_name
@@ -58,3 +59,40 @@ def validate_route_decision(
         raise InvalidRouteDecision(f"Agent '{decision.agent}' is not a routable registered agent.")
 
     return ValidatedRouteDecision(**decision.model_dump(), did_fallback=False)
+
+
+def _normalize_name(name: str) -> str:
+    return name.strip().lower()
+
+
+def _normalize_and_validate_pinned(name: str) -> str:
+    trimmed = name.strip()
+    if not trimmed:
+        raise InvalidRouteDecision("Pinned agent cannot be empty or whitespace.")
+    return trimmed.lower()
+
+
+def _coerce_route_decision(obj: Any) -> RouteDecision:
+    if isinstance(obj, RouteDecision):
+        return obj
+    if isinstance(obj, dict):
+        try:
+            return RouteDecision(**obj)
+        except ValidationError as exc:
+            raise InvalidRouteDecision(str(exc)) from exc
+    if isinstance(obj, BaseModel):
+        data = obj.model_dump()
+        if "agent" in data and "confidence" in data:
+            return RouteDecision(
+                agent=data["agent"],
+                confidence=data["confidence"],
+                reasoning=data.get("reasoning"),
+            )
+    agent = getattr(obj, "agent", None)
+    confidence = getattr(obj, "confidence", None)
+    reasoning = getattr(obj, "reasoning", None)
+    if agent is None or confidence is None:
+        raise InvalidRouteDecision(
+            "Classifier output must provide at least 'agent' and 'confidence'."
+        )
+    return RouteDecision(agent=agent, confidence=confidence, reasoning=reasoning)
