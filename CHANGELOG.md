@@ -12,6 +12,11 @@ All notable changes to this repository will be documented in this file.
 - **Confidence threshold**: `validate_route_decision()` now accepts
   `confidence_threshold` to fall back to the default agent when the classifier's
   confidence is below the threshold. Works for both LLM and FAISS classification paths.
+- **Dispatcher fallback support**: all three dispatchers (`PydanticAIDispatcher`,
+  `OpenAIAgentsDispatcher`, `GoogleADKDispatcher`) now accept `allow_fallback` and
+  `confidence_threshold` as constructor arguments, passed through to validation.
+- **Registry ergonomics**: `AgentRegistry` now supports `len(registry)` and
+  `"agent_name" in registry`.
 
 ### Changed
 - Deduplicate shared routing helpers (`_coerce_route_decision`, `_normalize_name`,

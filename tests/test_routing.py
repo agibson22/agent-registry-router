@@ -24,7 +24,7 @@ def test_validate_route_decision_accepts_routable_agent() -> None:
     assert validated.confidence == 0.9
 
 
-def test_validate_route_decision_falls_back_to_default_agent_when_invalid() -> None:
+def test_validate_route_decision_raises_on_invalid_agent() -> None:
     registry = AgentRegistry()
     registry.register(AgentRegistration(name="general", description="General help."))
     registry.register(AgentRegistration(name="special", description="Specialized help."))
@@ -138,7 +138,7 @@ def test_validate_route_decision_confidence_threshold_none_disables_check() -> N
     assert validated.did_fallback is False
 
 
-def test_validate_route_decision_falls_back_to_first_routable_if_default_not_registered() -> None:
+def test_validate_route_decision_raises_when_default_not_registered() -> None:
     registry = AgentRegistry()
     registry.register(AgentRegistration(name="special", description="Specialized help."))
 
@@ -178,6 +178,25 @@ def test_registry_rejects_empty_name() -> None:
     registry = AgentRegistry()
     with pytest.raises(RegistryError):
         registry.register(AgentRegistration(name="   ", description="bad"))
+
+
+def test_registry_len() -> None:
+    registry = AgentRegistry()
+    assert len(registry) == 0
+    registry.register(AgentRegistration(name="general", description="General help."))
+    assert len(registry) == 1
+    registry.register(AgentRegistration(name="special", description="Special help."))
+    assert len(registry) == 2
+
+
+def test_registry_contains() -> None:
+    registry = AgentRegistry()
+    registry.register(AgentRegistration(name="general", description="General help."))
+
+    assert "general" in registry
+    assert "GENERAL" in registry
+    assert "  General  " in registry
+    assert "missing" not in registry
 
 
 def test_registry_get_normalizes_name() -> None:

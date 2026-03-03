@@ -12,7 +12,7 @@ Registry-driven LLM routing: build classifier prompts, validate decisions, and d
 When you have multiple AI agents, something needs to decide which one handles each user message. Most teams hardcode `if/else` chains or build bespoke classifiers. This library gives you a clean, framework-agnostic way to:
 
 - **Build classifier prompts** from a registry of agent descriptions
-- **Validate routing decisions** with typed errors (no silent fallbacks)
+- **Validate routing decisions** with typed errors or optional graceful fallback
 - **Dispatch** to the selected agent with observability hooks
 - **Benchmark** classifier accuracy across LLMs and embedding models
 

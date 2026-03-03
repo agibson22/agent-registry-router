@@ -99,6 +99,8 @@ class OpenAIAgentsDispatcher:
         default_agent: str = "general",
         on_event: Callable[[RoutingEvent], None] | None = None,
         logger: logging.Logger | None = None,
+        allow_fallback: bool = False,
+        confidence_threshold: float | None = None,
     ) -> None:
         self._registry = registry
         self._classifier_agent = classifier_agent
@@ -107,6 +109,8 @@ class OpenAIAgentsDispatcher:
         self._default_agent = _normalize_name(default_agent)
         self._on_event = on_event
         self._logger = logger or logging.getLogger(__name__)
+        self._allow_fallback = allow_fallback
+        self._confidence_threshold = confidence_threshold
 
     def _emit(self, kind: str, payload: dict[str, Any], error: BaseException | None = None) -> None:
         event = RoutingEvent(kind=kind, payload=payload, error=error)
@@ -162,6 +166,8 @@ class OpenAIAgentsDispatcher:
             decision,
             registry=self._registry,
             default_agent=self._default_agent,
+            allow_fallback=self._allow_fallback,
+            confidence_threshold=self._confidence_threshold,
         )
         self._emit(
             "decision_validated",
@@ -235,6 +241,8 @@ class OpenAIAgentsDispatcher:
             decision,
             registry=self._registry,
             default_agent=self._default_agent,
+            allow_fallback=self._allow_fallback,
+            confidence_threshold=self._confidence_threshold,
         )
         self._emit(
             "decision_validated",

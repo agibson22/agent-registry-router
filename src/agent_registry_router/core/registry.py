@@ -73,6 +73,12 @@ class AgentRegistry:
         """Get a registration by name."""
         return self._agents.get(_normalize_agent_name(name))
 
+    def __len__(self) -> int:
+        return len(self._agents)
+
+    def __contains__(self, name: str) -> bool:
+        return _normalize_agent_name(name) in self._agents
+
     def all_names(self) -> list[str]:
         return list(self._agents.keys())
 
