@@ -135,12 +135,28 @@ See [`evals/README.md`](evals/README.md) for details. Bring your own fixtures to
 
 ## Error Handling
 
-Fail-fast with typed exceptions — no silent fallbacks.
+Fail-fast by default with typed exceptions:
 
 - `InvalidRouteDecision` — classifier picked a non-routable agent
 - `InvalidFallback` — default agent isn't routable or registry is empty
 - `AgentNotFound` — validated agent can't be resolved for dispatch
 - `RegistryError` — invalid names, descriptions, or empty registry
+
+### Graceful Fallback
+
+Opt in to graceful degradation instead of hard failures:
+
+```python
+validated = validate_route_decision(
+    decision,
+    registry=registry,
+    default_agent="general",
+    allow_fallback=True,       # swap to default instead of raising on invalid agent
+    confidence_threshold=0.5,  # swap to default when confidence is below threshold
+)
+if validated.did_fallback:
+    print(f"Fell back: {validated.fallback_reason}")
+```
 
 ## Design Principles
 

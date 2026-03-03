@@ -43,6 +43,7 @@ def validate_route_decision(
     registry: AgentRegistry,
     default_agent: str = "general",
     allow_fallback: bool = False,
+    confidence_threshold: float | None = None,
 ) -> ValidatedRouteDecision:
     """Validate the route decision against routable agents.
 
@@ -50,6 +51,10 @@ def validate_route_decision(
     if the chosen agent is not routable.  When True, silently swaps to
     ``default_agent`` and sets ``did_fallback`` / ``fallback_reason`` on the
     returned decision.
+
+    When ``confidence_threshold`` is set and the decision's confidence is below
+    it, falls back to ``default_agent`` regardless of whether the agent name is
+    valid.
     """
     routable = set(registry.routable_names())
     normalized_default = _normalize_agent_name(default_agent)
@@ -74,6 +79,22 @@ def validate_route_decision(
             did_fallback=True,
             fallback_reason=(
                 f"Agent '{decision.agent}' is not routable; fell back to '{normalized_default}'."
+            ),
+        )
+
+    if (
+        confidence_threshold is not None
+        and decision.confidence < confidence_threshold
+        and decision.agent != normalized_default
+    ):
+        return ValidatedRouteDecision(
+            agent=normalized_default,
+            confidence=decision.confidence,
+            reasoning=decision.reasoning,
+            did_fallback=True,
+            fallback_reason=(
+                f"Confidence {decision.confidence:.2f} below threshold "
+                f"{confidence_threshold}; fell back to '{normalized_default}'."
             ),
         )
 

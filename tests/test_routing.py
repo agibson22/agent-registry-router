@@ -78,6 +78,66 @@ def test_validate_route_decision_allow_fallback_still_raises_on_invalid_default(
         )
 
 
+def test_validate_route_decision_confidence_threshold_triggers_fallback() -> None:
+    registry = AgentRegistry()
+    registry.register(AgentRegistration(name="general", description="General help."))
+    registry.register(AgentRegistration(name="billing", description="Billing help."))
+
+    decision = RouteDecision(agent="billing", confidence=0.15, reasoning="Not sure.")
+    validated = validate_route_decision(
+        decision, registry=registry, default_agent="general", confidence_threshold=0.5
+    )
+
+    assert validated.agent == "general"
+    assert validated.did_fallback is True
+    assert validated.fallback_reason is not None
+    assert "0.15" in validated.fallback_reason
+    assert "0.5" in validated.fallback_reason
+    assert validated.confidence == 0.15
+
+
+def test_validate_route_decision_confidence_threshold_no_fallback_when_above() -> None:
+    registry = AgentRegistry()
+    registry.register(AgentRegistration(name="general", description="General help."))
+    registry.register(AgentRegistration(name="billing", description="Billing help."))
+
+    decision = RouteDecision(agent="billing", confidence=0.9, reasoning="Clear match.")
+    validated = validate_route_decision(
+        decision, registry=registry, default_agent="general", confidence_threshold=0.5
+    )
+
+    assert validated.agent == "billing"
+    assert validated.did_fallback is False
+
+
+def test_validate_route_decision_confidence_threshold_skips_when_already_default() -> None:
+    registry = AgentRegistry()
+    registry.register(AgentRegistration(name="general", description="General help."))
+    registry.register(AgentRegistration(name="billing", description="Billing help."))
+
+    decision = RouteDecision(agent="general", confidence=0.1, reasoning="Fallback guess.")
+    validated = validate_route_decision(
+        decision, registry=registry, default_agent="general", confidence_threshold=0.5
+    )
+
+    assert validated.agent == "general"
+    assert validated.did_fallback is False
+
+
+def test_validate_route_decision_confidence_threshold_none_disables_check() -> None:
+    registry = AgentRegistry()
+    registry.register(AgentRegistration(name="general", description="General help."))
+    registry.register(AgentRegistration(name="billing", description="Billing help."))
+
+    decision = RouteDecision(agent="billing", confidence=0.1, reasoning="Low but allowed.")
+    validated = validate_route_decision(
+        decision, registry=registry, default_agent="general", confidence_threshold=None
+    )
+
+    assert validated.agent == "billing"
+    assert validated.did_fallback is False
+
+
 def test_validate_route_decision_falls_back_to_first_routable_if_default_not_registered() -> None:
     registry = AgentRegistry()
     registry.register(AgentRegistration(name="special", description="Specialized help."))

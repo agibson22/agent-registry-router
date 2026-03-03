@@ -2,6 +2,22 @@
 
 All notable changes to this repository will be documented in this file.
 
+## v0.4.0 — 2026-03-03
+
+### Added
+- **Graceful fallback**: `validate_route_decision()` now accepts `allow_fallback=True`
+  to swap to the default agent instead of raising `InvalidRouteDecision` when the
+  classifier picks a non-routable agent. Sets `did_fallback` and `fallback_reason`
+  on the returned `ValidatedRouteDecision`.
+- **Confidence threshold**: `validate_route_decision()` now accepts
+  `confidence_threshold` to fall back to the default agent when the classifier's
+  confidence is below the threshold. Works for both LLM and FAISS classification paths.
+
+### Changed
+- Deduplicate shared routing helpers (`_coerce_route_decision`, `_normalize_name`,
+  `_normalize_and_validate_pinned`) into `core.routing` — adapters now import from
+  core instead of each defining their own copy.
+
 ## v0.3.0 — 2026-03-02
 
 ### Added
