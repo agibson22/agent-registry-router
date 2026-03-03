@@ -63,7 +63,10 @@ class FakeRunner:
         return FakeRunResult(final_output=output)
 
     def run_streamed(
-        self, agent: Any, input: str, **kwargs: Any  # noqa: A002
+        self,
+        agent: Any,
+        input: str,  # noqa: A002
+        **kwargs: Any,
     ) -> FakeRunResultStreaming:
         return self._stream_results.get(
             agent.name,

@@ -41,7 +41,6 @@ dev = [
   "pytest-cov>=4.1.0",
   "anyio[trio]",
   "ruff>=0.7.0",
-  "black>=24.8.0",
   "mypy>=1.11.0",
 ]
 eval = [
@@ -62,9 +61,6 @@ exclude = ["**/__pycache__/**"]
 [tool.hatch.build.targets.sdist]
 include = ["src/agent_registry_router/**"]
 exclude = ["**/__pycache__/**"]
-
-[tool.black]
-line-length = 100
 
 [tool.pytest.ini_options]
 pythonpath = ["src"]

@@ -20,6 +20,7 @@ from typing import Any, Protocol
 from agent_registry_router.core import (
     AgentNotFound,
     AgentRegistry,
+    EventKind,
     RouteDecision,
     RoutingEvent,
     ValidatedRouteDecision,
@@ -144,7 +145,7 @@ class GoogleADKDispatcher:
             pinned = _normalize_and_validate_pinned(pinned_agent)
             agent = self._get_agent(pinned)
             if agent is not None:
-                self._emit("pinned_bypass", {"agent": pinned, "message": message})
+                self._emit(EventKind.PINNED_BYPASS, {"agent": pinned, "message": message})
                 run_result = await self._runner.run(agent, message)
                 return DispatchResult(
                     agent_name=pinned,
@@ -153,13 +154,13 @@ class GoogleADKDispatcher:
                     classifier_decision=None,
                     was_pinned=True,
                 )
-            self._emit("pinned_invalid", {"pinned": pinned, "message": message})
+            self._emit(EventKind.PINNED_INVALID, {"pinned": pinned, "message": message})
 
-        self._emit("classifier_run_start", {"message": message})
+        self._emit(EventKind.CLASSIFIER_RUN_START, {"message": message})
         classifier_result = await self._runner.run(self._classifier_agent, message)
         decision = _coerce_route_decision(classifier_result.output)
         self._emit(
-            "classifier_run_success",
+            EventKind.CLASSIFIER_RUN_SUCCESS,
             {
                 "message": message,
                 "agent": decision.agent,
@@ -175,7 +176,7 @@ class GoogleADKDispatcher:
             confidence_threshold=self._confidence_threshold,
         )
         self._emit(
-            "decision_validated",
+            EventKind.DECISION_VALIDATED,
             {
                 "selected": validated.agent,
                 "confidence": validated.confidence,
@@ -187,16 +188,16 @@ class GoogleADKDispatcher:
         if agent is None:
             error = AgentNotFound(f"Agent '{validated.agent}' not found (after validation).")
             self._emit(
-                "agent_resolve_failed",
+                EventKind.AGENT_RESOLVE_FAILED,
                 {"agent": validated.agent},
                 error=error,
             )
             raise error
 
-        self._emit("agent_resolve_success", {"agent": validated.agent})
+        self._emit(EventKind.AGENT_RESOLVE_SUCCESS, {"agent": validated.agent})
         agent_result = await self._runner.run(agent, message)
 
-        self._emit("agent_run_success", {"agent": validated.agent})
+        self._emit(EventKind.AGENT_RUN_SUCCESS, {"agent": validated.agent})
         return DispatchResult(
             agent_name=validated.agent,
             output=agent_result.output,
@@ -220,7 +221,7 @@ class GoogleADKDispatcher:
             pinned = _normalize_and_validate_pinned(pinned_agent)
             agent = self._get_agent(pinned)
             if agent is not None:
-                self._emit("pinned_bypass", {"agent": pinned, "message": message})
+                self._emit(EventKind.PINNED_BYPASS, {"agent": pinned, "message": message})
                 async for event in self._stream_agent(
                     agent,
                     pinned,
@@ -231,13 +232,13 @@ class GoogleADKDispatcher:
                 ):
                     yield event
                 return
-            self._emit("pinned_invalid", {"pinned": pinned, "message": message})
+            self._emit(EventKind.PINNED_INVALID, {"pinned": pinned, "message": message})
 
-        self._emit("classifier_run_start", {"message": message})
+        self._emit(EventKind.CLASSIFIER_RUN_START, {"message": message})
         classifier_result = await self._runner.run(self._classifier_agent, message)
         decision = _coerce_route_decision(classifier_result.output)
         self._emit(
-            "classifier_run_success",
+            EventKind.CLASSIFIER_RUN_SUCCESS,
             {
                 "message": message,
                 "agent": decision.agent,
@@ -253,7 +254,7 @@ class GoogleADKDispatcher:
             confidence_threshold=self._confidence_threshold,
         )
         self._emit(
-            "decision_validated",
+            EventKind.DECISION_VALIDATED,
             {
                 "selected": validated.agent,
                 "confidence": validated.confidence,
@@ -265,13 +266,13 @@ class GoogleADKDispatcher:
         if agent is None:
             error = AgentNotFound(f"Agent '{validated.agent}' not found (after validation).")
             self._emit(
-                "agent_resolve_failed",
+                EventKind.AGENT_RESOLVE_FAILED,
                 {"agent": validated.agent},
                 error=error,
             )
             raise error
 
-        self._emit("agent_resolve_success", {"agent": validated.agent})
+        self._emit(EventKind.AGENT_RESOLVE_SUCCESS, {"agent": validated.agent})
         async for event in self._stream_agent(
             agent,
             validated.agent,
@@ -303,7 +304,7 @@ class GoogleADKDispatcher:
                     "event_index": events_emitted,
                     "event_type": type(raw_event).__name__,
                 }
-                self._emit("agent_stream_event", payload)
+                self._emit(EventKind.AGENT_STREAM_EVENT, payload)
 
                 if first:
                     yield StreamEvent(
@@ -325,7 +326,7 @@ class GoogleADKDispatcher:
                 events_emitted += 1
         finally:
             self._emit(
-                "agent_stream_end",
+                EventKind.AGENT_STREAM_END,
                 {"agent": agent_name, "events_emitted": events_emitted},
             )
-            self._emit("agent_run_success", {"agent": agent_name})
+            self._emit(EventKind.AGENT_RUN_SUCCESS, {"agent": agent_name})

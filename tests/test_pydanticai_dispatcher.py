@@ -131,9 +131,7 @@ class FakeRunStreamNoTextContextManager:
 
 
 class FakeStreamingAgentMissingStreamText:
-    def run_stream(
-        self, message: str, *, deps: Any
-    ) -> FakeRunStreamNoTextContextManager:  # noqa: ARG002
+    def run_stream(self, message: str, *, deps: Any) -> FakeRunStreamNoTextContextManager:  # noqa: ARG002
         return FakeRunStreamNoTextContextManager()
 
 
@@ -151,9 +149,7 @@ class FakeStreamingClassifier:
         # Fallback non-streaming path; return the same output for convenience.
         return FakeRunResult(self._output)
 
-    async def run_stream_events(
-        self, message: str, *, deps: Any
-    ) -> AsyncIterator[Any]:  # noqa: ARG002
+    async def run_stream_events(self, message: str, *, deps: Any) -> AsyncIterator[Any]:  # noqa: ARG002
         yield object()  # some non-result event
         if self._include_final_event:
             yield FakeClassifierRunResultEvent(result=FakeRunResult(self._output))
@@ -216,9 +212,7 @@ class FakeStreamingClassifierRunStream:
     async def run(self, message: str, *, deps: Any) -> FakeRunResult:  # noqa: ARG002
         return FakeRunResult(self._output)
 
-    def run_stream(
-        self, message: str, *, deps: Any
-    ) -> FakeClassifierRunStreamContextManager:  # noqa: ARG002
+    def run_stream(self, message: str, *, deps: Any) -> FakeClassifierRunStreamContextManager:  # noqa: ARG002
         return FakeClassifierRunStreamContextManager(self._streamed)
 
 

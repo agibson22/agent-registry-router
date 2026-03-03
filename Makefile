@@ -7,12 +7,12 @@ install:
 
 lint:
 	uv run ruff check .
-	uv run black --check .
+	uv run ruff format --check .
 	uv run mypy --config-file pyproject.mypy.ini .
 
 format:
 	uv run ruff check --fix .
-	uv run black .
+	uv run ruff format .
 
 typecheck:
 	uv run mypy --config-file pyproject.mypy.ini .

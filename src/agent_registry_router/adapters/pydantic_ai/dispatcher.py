@@ -9,6 +9,7 @@ from typing import Any, Protocol
 from agent_registry_router.core import (
     AgentNotFound,
     AgentRegistry,
+    EventKind,
     InvalidRouteDecision,
     RouteDecision,
     RoutingEvent,
@@ -159,7 +160,7 @@ class ResponseStreamSession(AbstractAsyncContextManager["ResponseStreamSession"]
                     "response_type": type(model_response).__name__,
                     "is_last": is_last,
                 }
-                self._emit("agent_stream_response", payload, None)
+                self._emit(EventKind.AGENT_STREAM_RESPONSE, payload, None)
 
                 if first:
                     yield AgentResponseStreamItem(
@@ -185,7 +186,7 @@ class ResponseStreamSession(AbstractAsyncContextManager["ResponseStreamSession"]
                 last_seen = last_seen or is_last
         finally:
             self._emit(
-                "agent_stream_end",
+                EventKind.AGENT_STREAM_END,
                 {
                     "agent": self.agent_name,
                     "responses_emitted": responses_emitted,
@@ -193,7 +194,7 @@ class ResponseStreamSession(AbstractAsyncContextManager["ResponseStreamSession"]
                 },
                 None,
             )
-            self._emit("agent_run_success", {"agent": self.agent_name}, None)
+            self._emit(EventKind.AGENT_RUN_SUCCESS, {"agent": self.agent_name}, None)
 
 
 class PydanticAIDispatcher:
@@ -242,7 +243,7 @@ class PydanticAIDispatcher:
             pinned = _normalize_and_validate_pinned(pinned_agent)
             agent = self._get_agent(pinned)
             if agent is not None:
-                self._emit("pinned_bypass", {"agent": pinned, "message": message})
+                self._emit(EventKind.PINNED_BYPASS, {"agent": pinned, "message": message})
                 deps = deps_for_agent(pinned)
                 run_result = await agent.run(message, deps=deps)
                 return DispatchResult(
@@ -253,14 +254,14 @@ class PydanticAIDispatcher:
                     was_pinned=True,
                 )
             # If pinned is invalid, fall through to classifier routing.
-            self._emit("pinned_invalid", {"pinned": pinned, "message": message})
+            self._emit(EventKind.PINNED_INVALID, {"pinned": pinned, "message": message})
 
-        self._emit("classifier_run_start", {"message": message})
+        self._emit(EventKind.CLASSIFIER_RUN_START, {"message": message})
         classifier_run = await self._classifier_agent.run(message, deps=classifier_deps)
         classifier_out = _extract_output(classifier_run)
         decision = _coerce_route_decision(classifier_out)
         self._emit(
-            "classifier_run_success",
+            EventKind.CLASSIFIER_RUN_SUCCESS,
             {
                 "message": message,
                 "agent": decision.agent,
@@ -276,7 +277,7 @@ class PydanticAIDispatcher:
             confidence_threshold=self._confidence_threshold,
         )
         self._emit(
-            "decision_validated",
+            EventKind.DECISION_VALIDATED,
             {
                 "selected": validated.agent,
                 "confidence": validated.confidence,
@@ -287,14 +288,14 @@ class PydanticAIDispatcher:
         agent = self._get_agent(validated.agent)
         if agent is None:
             error = AgentNotFound(f"Agent '{validated.agent}' not found (after validation).")
-            self._emit("agent_resolve_failed", {"agent": validated.agent}, error=error)
+            self._emit(EventKind.AGENT_RESOLVE_FAILED, {"agent": validated.agent}, error=error)
             raise error
 
-        self._emit("agent_resolve_success", {"agent": validated.agent})
+        self._emit(EventKind.AGENT_RESOLVE_SUCCESS, {"agent": validated.agent})
         deps = deps_for_agent(validated.agent)
         agent_run = await agent.run(message, deps=deps)
 
-        self._emit("agent_run_success", {"agent": validated.agent})
+        self._emit(EventKind.AGENT_RUN_SUCCESS, {"agent": validated.agent})
         return DispatchResult(
             agent_name=validated.agent,
             output=_extract_output(agent_run),
@@ -322,7 +323,7 @@ class PydanticAIDispatcher:
             pinned = _normalize_and_validate_pinned(pinned_agent)
             agent = self._get_agent(pinned)
             if agent is not None:
-                self._emit("pinned_bypass", {"agent": pinned, "message": message})
+                self._emit(EventKind.PINNED_BYPASS, {"agent": pinned, "message": message})
                 deps = deps_for_agent(pinned)
 
                 run_stream = getattr(agent, "run_stream", None)
@@ -352,7 +353,7 @@ class PydanticAIDispatcher:
                         }
                         if isinstance(chunk, str):
                             payload["text_len"] = len(chunk)
-                        self._emit("agent_stream_chunk", payload)
+                        self._emit(EventKind.AGENT_STREAM_CHUNK, payload)
                         yield AgentStreamChunk(
                             agent_name=pinned,
                             chunk=chunk,
@@ -362,13 +363,13 @@ class PydanticAIDispatcher:
                         chunks_emitted += 1
 
                 self._emit(
-                    "agent_stream_end",
+                    EventKind.AGENT_STREAM_END,
                     {"agent": pinned, "chunks_emitted": chunks_emitted},
                 )
-                self._emit("agent_run_success", {"agent": pinned})
+                self._emit(EventKind.AGENT_RUN_SUCCESS, {"agent": pinned})
                 return
             # If pinned is invalid, fall through to classifier routing.
-            self._emit("pinned_invalid", {"pinned": pinned, "message": message})
+            self._emit(EventKind.PINNED_INVALID, {"pinned": pinned, "message": message})
 
         decision = await self._run_classifier_decision(
             message,
@@ -384,7 +385,7 @@ class PydanticAIDispatcher:
             confidence_threshold=self._confidence_threshold,
         )
         self._emit(
-            "decision_validated",
+            EventKind.DECISION_VALIDATED,
             {
                 "selected": validated.agent,
                 "confidence": validated.confidence,
@@ -395,10 +396,10 @@ class PydanticAIDispatcher:
         agent = self._get_agent(validated.agent)
         if agent is None:
             error = AgentNotFound(f"Agent '{validated.agent}' not found (after validation).")
-            self._emit("agent_resolve_failed", {"agent": validated.agent}, error=error)
+            self._emit(EventKind.AGENT_RESOLVE_FAILED, {"agent": validated.agent}, error=error)
             raise error
 
-        self._emit("agent_resolve_success", {"agent": validated.agent})
+        self._emit(EventKind.AGENT_RESOLVE_SUCCESS, {"agent": validated.agent})
         deps = deps_for_agent(validated.agent)
 
         run_stream = getattr(agent, "run_stream", None)
@@ -429,7 +430,7 @@ class PydanticAIDispatcher:
                 }
                 if isinstance(chunk, str):
                     payload["text_len"] = len(chunk)
-                self._emit("agent_stream_chunk", payload)
+                self._emit(EventKind.AGENT_STREAM_CHUNK, payload)
 
                 if first:
                     yield AgentStreamChunk(
@@ -451,10 +452,10 @@ class PydanticAIDispatcher:
                 chunks_emitted += 1
 
         self._emit(
-            "agent_stream_end",
+            EventKind.AGENT_STREAM_END,
             {"agent": validated.agent, "chunks_emitted": chunks_emitted},
         )
-        self._emit("agent_run_success", {"agent": validated.agent})
+        self._emit(EventKind.AGENT_RUN_SUCCESS, {"agent": validated.agent})
 
     def route_and_stream_responses(
         self,
@@ -489,7 +490,7 @@ class PydanticAIDispatcher:
                 pinned = _normalize_and_validate_pinned(pinned_agent)
                 agent = self._get_agent(pinned)
                 if agent is not None:
-                    self._emit("pinned_bypass", {"agent": pinned, "message": message})
+                    self._emit(EventKind.PINNED_BYPASS, {"agent": pinned, "message": message})
                     deps = deps_for_agent(pinned)
                     run_stream = getattr(agent, "run_stream", None)
                     if run_stream is None:
@@ -503,7 +504,7 @@ class PydanticAIDispatcher:
                         None,
                         True,
                     )
-                self._emit("pinned_invalid", {"pinned": pinned, "message": message})
+                self._emit(EventKind.PINNED_INVALID, {"pinned": pinned, "message": message})
 
             decision = await self._run_classifier_decision(
                 message,
@@ -519,7 +520,7 @@ class PydanticAIDispatcher:
                 confidence_threshold=self._confidence_threshold,
             )
             self._emit(
-                "decision_validated",
+                EventKind.DECISION_VALIDATED,
                 {
                     "selected": validated.agent,
                     "confidence": validated.confidence,
@@ -530,10 +531,10 @@ class PydanticAIDispatcher:
             agent = self._get_agent(validated.agent)
             if agent is None:
                 error = AgentNotFound(f"Agent '{validated.agent}' not found (after validation).")
-                self._emit("agent_resolve_failed", {"agent": validated.agent}, error=error)
+                self._emit(EventKind.AGENT_RESOLVE_FAILED, {"agent": validated.agent}, error=error)
                 raise error
 
-            self._emit("agent_resolve_success", {"agent": validated.agent})
+            self._emit(EventKind.AGENT_RESOLVE_SUCCESS, {"agent": validated.agent})
             deps = deps_for_agent(validated.agent)
             run_stream = getattr(agent, "run_stream", None)
             if run_stream is None:
@@ -562,7 +563,7 @@ class PydanticAIDispatcher:
         classifier_deps: Any,
         stream_classifier: bool,
     ) -> RouteDecision:
-        self._emit("classifier_run_start", {"message": message})
+        self._emit(EventKind.CLASSIFIER_RUN_START, {"message": message})
 
         if stream_classifier:
             decision = await self._run_classifier_decision_streaming(
@@ -574,7 +575,7 @@ class PydanticAIDispatcher:
             decision = _coerce_route_decision(classifier_out)
 
         self._emit(
-            "classifier_run_success",
+            EventKind.CLASSIFIER_RUN_SUCCESS,
             {
                 "message": message,
                 "agent": decision.agent,
