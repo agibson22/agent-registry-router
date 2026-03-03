@@ -34,6 +34,50 @@ def test_validate_route_decision_falls_back_to_default_agent_when_invalid() -> N
         validate_route_decision(decision, registry=registry, default_agent="general")
 
 
+def test_validate_route_decision_allow_fallback_swaps_to_default() -> None:
+    registry = AgentRegistry()
+    registry.register(AgentRegistration(name="general", description="General help."))
+    registry.register(AgentRegistration(name="special", description="Specialized help."))
+
+    decision = RouteDecision(agent="does_not_exist", confidence=0.8, reasoning="Guess.")
+    validated = validate_route_decision(
+        decision, registry=registry, default_agent="general", allow_fallback=True
+    )
+
+    assert validated.agent == "general"
+    assert validated.did_fallback is True
+    assert validated.fallback_reason is not None
+    assert "does_not_exist" in validated.fallback_reason
+    assert validated.confidence == 0.8
+    assert validated.reasoning == "Guess."
+
+
+def test_validate_route_decision_allow_fallback_no_fallback_when_valid() -> None:
+    registry = AgentRegistry()
+    registry.register(AgentRegistration(name="general", description="General help."))
+    registry.register(AgentRegistration(name="special", description="Specialized help."))
+
+    decision = RouteDecision(agent="special", confidence=0.9, reasoning="Clear match.")
+    validated = validate_route_decision(
+        decision, registry=registry, default_agent="general", allow_fallback=True
+    )
+
+    assert validated.agent == "special"
+    assert validated.did_fallback is False
+    assert validated.fallback_reason is None
+
+
+def test_validate_route_decision_allow_fallback_still_raises_on_invalid_default() -> None:
+    registry = AgentRegistry()
+    registry.register(AgentRegistration(name="special", description="Specialized help."))
+
+    decision = RouteDecision(agent="does_not_exist", confidence=0.2, reasoning="Guess.")
+    with pytest.raises(InvalidFallback):
+        validate_route_decision(
+            decision, registry=registry, default_agent="general", allow_fallback=True
+        )
+
+
 def test_validate_route_decision_falls_back_to_first_routable_if_default_not_registered() -> None:
     registry = AgentRegistry()
     registry.register(AgentRegistration(name="special", description="Specialized help."))

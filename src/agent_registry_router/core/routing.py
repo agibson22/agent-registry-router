@@ -42,8 +42,15 @@ def validate_route_decision(
     *,
     registry: AgentRegistry,
     default_agent: str = "general",
+    allow_fallback: bool = False,
 ) -> ValidatedRouteDecision:
-    """Validate the route decision against routable agents; fail-fast on invalid cases."""
+    """Validate the route decision against routable agents.
+
+    When ``allow_fallback`` is False (default), raises ``InvalidRouteDecision``
+    if the chosen agent is not routable.  When True, silently swaps to
+    ``default_agent`` and sets ``did_fallback`` / ``fallback_reason`` on the
+    returned decision.
+    """
     routable = set(registry.routable_names())
     normalized_default = _normalize_agent_name(default_agent)
 
@@ -56,7 +63,19 @@ def validate_route_decision(
         )
 
     if decision.agent not in routable:
-        raise InvalidRouteDecision(f"Agent '{decision.agent}' is not a routable registered agent.")
+        if not allow_fallback:
+            raise InvalidRouteDecision(
+                f"Agent '{decision.agent}' is not a routable registered agent."
+            )
+        return ValidatedRouteDecision(
+            agent=normalized_default,
+            confidence=decision.confidence,
+            reasoning=decision.reasoning,
+            did_fallback=True,
+            fallback_reason=(
+                f"Agent '{decision.agent}' is not routable; fell back to '{normalized_default}'."
+            ),
+        )
 
     return ValidatedRouteDecision(**decision.model_dump(), did_fallback=False)
 
