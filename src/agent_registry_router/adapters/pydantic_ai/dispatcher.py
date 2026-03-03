@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import logging
-from collections.abc import AsyncIterable, AsyncIterator, Callable
+from collections.abc import AsyncIterable, AsyncIterator, Awaitable, Callable
 from contextlib import AbstractAsyncContextManager
 from dataclasses import dataclass
 from typing import Any, Protocol
@@ -15,6 +15,7 @@ from agent_registry_router.core import (
     ValidatedRouteDecision,
     validate_route_decision,
 )
+from agent_registry_router.core.events import emit_routing_event
 from agent_registry_router.core.routing import (
     _coerce_route_decision,
     _normalize_and_validate_pinned,
@@ -220,17 +221,7 @@ class PydanticAIDispatcher:
         self._confidence_threshold = confidence_threshold
 
     def _emit(self, kind: str, payload: dict, error: BaseException | None = None) -> None:
-        event = RoutingEvent(kind=kind, payload=payload, error=error)
-        if self._on_event:
-            try:
-                self._on_event(event)
-            except Exception:
-                # Observability hooks should not break routing.
-                self._logger.debug("Routing event hook failed", exc_info=True)
-        if error:
-            self._logger.debug("routing.%s error=%s payload=%s", kind, error, payload)
-        else:
-            self._logger.debug("routing.%s payload=%s", kind, payload)
+        emit_routing_event(kind, payload, error=error, on_event=self._on_event, logger=self._logger)
 
     async def route_and_run(
         self,
@@ -669,7 +660,15 @@ class _RouteAndStreamResponsesSession(ResponseStreamSession):
         *,
         resolve: Callable[
             [],
-            Any,
+            Awaitable[
+                tuple[
+                    str,
+                    AbstractAsyncContextManager[Any],
+                    ValidatedRouteDecision | None,
+                    RouteDecision | None,
+                    bool,
+                ]
+            ],
         ],
         debounce_by: float | None,
         outer_emit: Callable[[str, dict, BaseException | None], None],

@@ -199,6 +199,13 @@ def test_registry_contains() -> None:
     assert "missing" not in registry
 
 
+def test_registry_get_returns_none_for_missing() -> None:
+    registry = AgentRegistry()
+    registry.register(AgentRegistration(name="general", description="General help."))
+
+    assert registry.get("nonexistent") is None
+
+
 def test_registry_get_normalizes_name() -> None:
     registry = AgentRegistry()
     registry.register(AgentRegistration(name="general", description="General help."))

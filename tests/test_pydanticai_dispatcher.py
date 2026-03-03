@@ -398,6 +398,59 @@ def test_dispatcher_falls_back_when_classifier_selects_unknown_agent() -> None:
         _run(dispatcher)
 
 
+def test_dispatcher_allow_fallback_swaps_to_default_on_unknown_agent() -> None:
+    registry = AgentRegistry()
+    registry.register(AgentRegistration(name="general", description="General help."))
+    registry.register(AgentRegistration(name="special", description="Special help."))
+
+    classifier = FakeAgent(RouteDecision(agent="unknown", confidence=0.8, reasoning="Oops."))
+    general = FakeAgent({"answer": "from general"})
+    agents: dict[str, FakeAgent] = {
+        "general": general,
+        "special": FakeAgent({"answer": "from special"}),
+    }
+
+    dispatcher = PydanticAIDispatcher(
+        registry=registry,
+        classifier_agent=classifier,
+        get_agent=lambda name: agents.get(name),
+        default_agent="general",
+        allow_fallback=True,
+    )
+
+    result = _run(dispatcher)
+    assert result.agent_name == "general"
+    assert result.validated_decision is not None
+    assert result.validated_decision.did_fallback is True
+    assert general.called
+
+
+def test_dispatcher_confidence_threshold_swaps_to_default_on_low_confidence() -> None:
+    registry = AgentRegistry()
+    registry.register(AgentRegistration(name="general", description="General help."))
+    registry.register(AgentRegistration(name="special", description="Special help."))
+
+    classifier = FakeAgent(RouteDecision(agent="special", confidence=0.2, reasoning="Unsure."))
+    general = FakeAgent({"answer": "from general"})
+    special = FakeAgent({"answer": "from special"})
+    agents: dict[str, FakeAgent] = {"general": general, "special": special}
+
+    dispatcher = PydanticAIDispatcher(
+        registry=registry,
+        classifier_agent=classifier,
+        get_agent=lambda name: agents.get(name),
+        default_agent="general",
+        confidence_threshold=0.5,
+    )
+
+    result = _run(dispatcher)
+    assert result.agent_name == "general"
+    assert result.validated_decision is not None
+    assert result.validated_decision.did_fallback is True
+    assert general.called
+    assert not special.called
+
+
 def test_dispatcher_agent_resolve_failure_emits_and_raises() -> None:
     registry = AgentRegistry()
     registry.register(AgentRegistration(name="general", description="General help."))

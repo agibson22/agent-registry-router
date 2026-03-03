@@ -12,7 +12,7 @@ It uses **toy agents** (no API keys) that implement a PydanticAI-style `.run(mes
 From the repo root:
 
 ```bash
-cd /Users/ag/Sites/agent-registry-router
+cd agent-registry-router
 uv venv
 source .venv/bin/activate
 uv pip install -e ".[dev]"
