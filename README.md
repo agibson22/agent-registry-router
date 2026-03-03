@@ -48,7 +48,7 @@ pip install "agent-registry-router[faiss]"          # FAISS classifier
 ## Quick Start
 
 ```python
-from agent_registry_router.core import (
+from agent_registry_router import (
     AgentRegistry,
     AgentRegistration,
     RouteDecision,
@@ -98,7 +98,7 @@ from agent_registry_router.adapters.google_adk import GoogleADKDispatcher
 An alternative to LLM-based classification: embed agent descriptions, find the nearest match by cosine similarity. Near-zero latency, near-zero cost.
 
 ```python
-from agent_registry_router.core import FaissClassifier
+from agent_registry_router import FaissClassifier
 
 classifier = FaissClassifier(
     registry=registry,
@@ -112,7 +112,7 @@ decision = classifier.classify("I was charged twice")
 Built-in JSON logging for routing events. One line to set up.
 
 ```python
-from agent_registry_router.core import StructuredLogger
+from agent_registry_router import StructuredLogger
 
 dispatcher = PydanticAIDispatcher(
     ...,
@@ -170,7 +170,7 @@ if validated.did_fallback:
 
 ```bash
 make install       # install dev dependencies
-make lint          # ruff + black + mypy
+make lint          # ruff + mypy
 make test          # pytest with 85% coverage gate
 make format        # auto-format
 make eval          # run classifier benchmarks (requires API keys)

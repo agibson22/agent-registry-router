@@ -14,8 +14,8 @@ make install
 ## Development Loop
 
 ```bash
-make format    # auto-format (ruff + black)
-make lint      # lint + typecheck (ruff + black + mypy)
+make format    # auto-format (ruff)
+make lint      # lint + typecheck (ruff + mypy)
 make test      # pytest with coverage gate
 ```
 
@@ -46,4 +46,4 @@ make eval
 - One focused change per PR
 - Include tests for new functionality
 - Keep coverage above 85%
-- Follow existing code style (ruff + black enforce this)
+- Follow existing code style (ruff enforces this)
