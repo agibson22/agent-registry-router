@@ -151,7 +151,7 @@ validated = validate_route_decision(
     decision,
     registry=registry,
     default_agent="general",
-    allow_fallback=True,       # swap to default instead of raising on invalid agent
+    allow_fallback=True,  # swap to default instead of raising on invalid agent
     confidence_threshold=0.5,  # swap to default when confidence is below threshold
 )
 if validated.did_fallback:
